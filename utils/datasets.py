@@ -6,7 +6,7 @@ import shutil
 import time
 from pathlib import Path
 from threading import Thread
-
+import json
 import cv2
 import numpy as np
 import torch
@@ -341,6 +341,16 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             cache = self.cache_labels(cache_path)  # cache
 
         # Get labels
+        #with open('cache.json', 'w') as outfile:
+        #    json.dump(cache,outfile,indent=4,ensure_ascii = False)
+        #print('#'*100)
+        #print(cache[self.img_files[0]])
+        #print(self.img_files[857])
+        #print(cache[self.img_files[857]])
+        #print(cache[self.img_files[858]])
+        #print(len(cache[self.img_files]))
+
+        #print(self.img_files)
         labels, shapes = zip(*[cache[x] for x in self.img_files])
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)

@@ -136,14 +136,24 @@ def test(data,
 
             # Append to pycocotools JSON dictionary
             if save_json:
+                with open('/mmdetection/data/dent_latest2/annotations/dent_test.json') as f:
+                    d1=json.load(f)
+                img_id_dict={}
+                for zz1 in range(len(data['images'])):
+                    fn=data['images'][zz1]['file_name']
+                    fn=fn[:fn.rfind('.')]
+                    img_id_dict[fn]=data['images'][zz1]['image_id']
+                print(img_id_dict)
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = Path(paths[si]).stem
+                image_id=img_id_dict[image_id]
+                
                 box = pred[:, :4].clone()  # xyxy
                 scale_coords(img[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
                 box = xyxy2xywh(box)  # xywh
                 box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
                 for p, b in zip(pred.tolist(), box.tolist()):
-                    jdict.append({'image_id': int(image_id) if image_id.isnumeric() else image_id,
+                    jdict.append({'image_id': image_id,
                                   'category_id': coco91class[int(p[5])],
                                   'bbox': [round(x, 3) for x in b],
                                   'score': round(p[4], 5)})
@@ -176,7 +186,7 @@ def test(data,
                                 detected.append(d)
                                 correct[pi[j]] = ious[j] > iouv  # iou_thres is 1xn
                                 if len(detected) == nl:  # all targets already located in image
-                                    break
+                                   break
 
             # Append statistics (correct, conf, pcls, tcls)
             stats.append((correct.cpu(), pred[:, 4].cpu(), pred[:, 5].cpu(), tcls))
@@ -185,7 +195,7 @@ def test(data,
         if batch_i < 1:
             f = Path(save_dir) / ('test_batch%g_gt.jpg' % batch_i)  # filename
             plot_images(img, targets, paths, str(f), names)  # ground truth
-            f = Path(save_dir) / ('test_batch%g_pred.jpg' % batch_i)
+            f = Path(save_dir) / ('test_batch%g_p red.jpg' % batch_i)
             plot_images(img, output_to_target(output, width, height), paths, str(f), names)  # predictions
 
     # Compute statistics
@@ -223,16 +233,19 @@ def test(data,
         try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
             from pycocotools.coco import COCO
             from pycocotools.cocoeval import COCOeval
+            from fast_eval_api import COCOeval_opt as COCOeval
 
-            imgIds = [int(Path(x).stem) for x in dataloader.dataset.img_files]
-            cocoGt = COCO(glob.glob('../coco/annotations/instances_val*.json')[0])  # initialize COCO ground truth api
+            imgIds = list(image_id.values())
+            cocoGt = COCO('/mmdetection/data/dent_latest2/annotations/dent_test.json')  # initialize COCO ground truth api
             cocoDt = cocoGt.loadRes(f)  # initialize COCO pred api
             cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
             cocoEval.params.imgIds = imgIds  # image IDs to evaluate
             cocoEval.evaluate()
             cocoEval.accumulate()
             cocoEval.summarize()
-            map, map50 = cocoEval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
+            print('#'*40)
+            map, map50, map75, map25, map10 = cocoEval.stats[:5]  # update results (mAP@0.5:0.95, mAP@0.5)
+            print(map,map50,map75,map25,map10)
         except Exception as e:
             print('ERROR: pycocotools unable to run: %s' % e)
 
