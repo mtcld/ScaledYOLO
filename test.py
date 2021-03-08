@@ -139,11 +139,10 @@ def test(data,
                 with open('/mmdetection/data/dent_latest2/annotations/dent_test.json') as f:
                     d1=json.load(f)
                 img_id_dict={}
-                for zz1 in range(len(data['images'])):
-                    fn=data['images'][zz1]['file_name']
+                for zz1 in range(len(d1['images'])):
+                    fn=d1['images'][zz1]['file_name']
                     fn=fn[:fn.rfind('.')]
-                    img_id_dict[fn]=data['images'][zz1]['image_id']
-                print(img_id_dict)
+                    img_id_dict[fn]=d1['images'][zz1]['id']
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = Path(paths[si]).stem
                 image_id=img_id_dict[image_id]
