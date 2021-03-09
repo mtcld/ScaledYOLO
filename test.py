@@ -153,7 +153,7 @@ def test(data,
                 box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
                 for p, b in zip(pred.tolist(), box.tolist()):
                     jdict.append({'image_id': image_id,
-                                  'category_id': coco91class[int(p[5])],
+                                  'category_id': 0,
                                   'bbox': [round(x, 3) for x in b],
                                   'score': round(p[4], 5)})
 
@@ -234,7 +234,7 @@ def test(data,
             from pycocotools.cocoeval import COCOeval
             from fast_eval_api import COCOeval_opt as COCOeval
 
-            imgIds = list(image_id.values())
+            imgIds = list(img_id_dict.values())
             cocoGt = COCO('/mmdetection/data/dent_latest2/annotations/dent_test.json')  # initialize COCO ground truth api
             cocoDt = cocoGt.loadRes(f)  # initialize COCO pred api
             cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
