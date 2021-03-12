@@ -136,7 +136,7 @@ def test(data,
 
             # Append to pycocotools JSON dictionary
             if save_json:
-                with open('/mmdetection/data/dent_latest2/annotations/dent_test.json') as f:
+                with open('/mmdetection/data/crack_latest/annotations/crack_test.json') as f:
                     d1=json.load(f)
                 img_id_dict={}
                 for zz1 in range(len(d1['images'])):
@@ -235,7 +235,7 @@ def test(data,
             from fast_eval_api import COCOeval_opt as COCOeval
 
             imgIds = list(img_id_dict.values())
-            cocoGt = COCO('/mmdetection/data/dent_latest2/annotations/dent_test.json')  # initialize COCO ground truth api
+            cocoGt = COCO('/mmdetection/data/crack_latest/annotations/crack_test.json')  # initialize COCO ground truth api
             cocoDt = cocoGt.loadRes(f)  # initialize COCO pred api
             cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
             cocoEval.params.imgIds = imgIds  # image IDs to evaluate

@@ -13,7 +13,8 @@ import torch
 from PIL import Image, ExifTags
 from torch.utils.data import Dataset
 from tqdm import tqdm
-
+import PIL
+PIL.Image.MAX_IMAGE_PIXELS = 933120000
 from utils.general import xyxy2xywh, xywh2xyxy, torch_distributed_zero_first
 
 help_url = ''
@@ -345,8 +346,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         #    json.dump(cache,outfile,indent=4,ensure_ascii = False)
         #print('#'*100)
         #print(cache[self.img_files[0]])
-        #print(self.img_files[857])
-        #print(cache[self.img_files[857]])
+        #print(self.img_files[29709])
+        #print(cache[self.img_files[29709]])
         #print(cache[self.img_files[858]])
         #print(len(cache[self.img_files]))
 
