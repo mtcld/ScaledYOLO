@@ -14,3 +14,13 @@ b) coco.yaml contains train.txt, valid.txt and test.txt, each .txt file contains
 ```
 a) This will calculate the MAP for testing dataset--task test
 ```
+
+### 4. python generating-cf-results.py
+```
+a) This will generate confusion matrix json and predicted images with ground truth and tp and fp.
+```
+
+### 5. tensorboard --logdir=runs/exp... --host 0.0.0.0 --port 8080(port number)
+```
+a) Tensorboard command for the above training
+```
