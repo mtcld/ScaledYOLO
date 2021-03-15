@@ -145,6 +145,7 @@ def test(data,
                     img_id_dict[fn]=d1['images'][zz1]['id']
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = Path(paths[si]).stem
+                #print(len(img_id_dict.keys()))
                 image_id=img_id_dict[image_id]
                 
                 box = pred[:, :4].clone()  # xyxy

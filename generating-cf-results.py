@@ -65,9 +65,9 @@ file_store=damage_name + '_files/'
 fp_store=damage_name + '_fp/'
 
 
-test_json='/mmdetection/data/dent_latest2/annotations/dent_test.json'
+test_json='/mmdetection/data/crack_latest/annotations/crack_test.json'
 pred_json='detections_val2017__results.json'
-img_dir='/mmdetection/data/dent_latest2/images/'
+img_dir='/mmdetection/data/crack_latest/images/'
 
 with open(test_json) as f:
     data=json.load(f)
