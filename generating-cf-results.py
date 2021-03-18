@@ -56,7 +56,7 @@ def size_check_ann(r_org):
     return size
 
 
-damage_name='dent'
+damage_name='crack'
 
 
 Rectangle = namedtuple('Rectangle', 'xmin ymin xmax ymax')
