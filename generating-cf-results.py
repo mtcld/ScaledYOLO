@@ -127,12 +127,14 @@ for i in range(len(data['images'])):
             cv2.imwrite(file_store+file_name,image_new_org)
             
             
-    
+    print('original')
+    print(len(org_bbox_dict.keys()))
+    bbox_detected=[]
     for yp in pred_data:
         if yp['image_id']==file_id and yp['score']>0.25:
             bbox_pred=yp['bbox']
             area_list=[]
-            bbox_detected=[]
+            #bbox_detected=[]
             p_pred=[]
             if len(org_bbox_dict.keys())==0:
                 fp_check=1 
@@ -141,14 +143,16 @@ for i in range(len(data['images'])):
             else:
                 area_dict={}
                 r_pred=Rectangle(int(bbox_pred[0]),int(bbox_pred[1]),int(bbox_pred[0]+bbox_pred[2]),int(bbox_pred[1]+bbox_pred[3]))
-                print('r_pred')
-                print(r_pred)
+                #print('r_pred')
+                #print(r_pred)
                 for org_keys in org_bbox_dict.keys():
                     r_org=org_bbox_dict[org_keys]
                     area=rect_area_intersect(r_org,r_pred)
                     area_dict[org_keys]=area
                 
                 ann_detected=max(area_dict, key=area_dict.get)
+                print('ann detected')
+                print(ann_detected)
                 if ann_detected in bbox_detected:
                     continue
                 if max(area_dict.values())>0.25:
@@ -202,7 +206,8 @@ for i in range(len(data['images'])):
             
     if fp_check==1:
         cv2.imwrite(fp_store+file_name,image_new_org)
-    print(len(org_bbox_dict.keys()))            
+    print('Results')
+    print(len(org_bbox_dict.keys()))      
     print(tp_temp,fp_temp,fn_temp)                
 confusion_matrix={'true_positve_25':TP25,'true_positve_50':TP50,'false_positive':FP, 'false_negative':FN}
 with open(damage_name+'_confusion_matrix.json', 'w') as outfile:

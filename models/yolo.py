@@ -2,7 +2,7 @@ import argparse
 import math
 from copy import deepcopy
 from pathlib import Path
-
+import sys
 import torch
 import torch.nn as nn
 
@@ -235,6 +235,9 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             ch.append(c2)
         else:
             ch.append(c2)
+    print('*'*100)
+    print(layers)
+    print('*'*100)
     return nn.Sequential(*layers), sorted(save)
 
 
