@@ -1,3 +1,4 @@
+from torchviz import make_dot
 import argparse
 import math
 from copy import deepcopy
@@ -5,7 +6,7 @@ from pathlib import Path
 import sys
 import torch
 import torch.nn as nn
-
+sys.path.append('../')
 from models.common import *
 from models.experimental import MixConv2d, CrossConv, C3
 from utils.general import check_anchor_order, make_divisible, check_file
@@ -235,9 +236,9 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             ch.append(c2)
         else:
             ch.append(c2)
-    print('*'*100)
-    print(layers)
-    print('*'*100)
+        print('*'*100)
+        print(layers[-1])
+        print('*'*100)
     return nn.Sequential(*layers), sorted(save)
 
 
@@ -254,9 +255,9 @@ if __name__ == '__main__':
     model.train()
 
     # Profile
-    # img = torch.rand(8 if torch.cuda.is_available() else 1, 3, 640, 640).to(device)
-    # y = model(img, profile=True)
-
+    img = torch.rand(8 if torch.cuda.is_available() else 1, 3, 640, 640).to(device)
+    y = model(img, profile=True)
+    #make_dot(y.mean(),params=dict(model.name_parameters())).render("attached", format="png")
     # ONNX export
     # model.model[-1].export = True
     # torch.onnx.export(model, img, opt.cfg.replace('.yaml', '.onnx'), verbose=True, opset_version=11)
