@@ -1,3 +1,6 @@
+from roi_align import RoIAlign      # RoIAlign module
+from roi_align import CropAndResize # crop_and_resize module
+from roi_align.crop_and_resize import CropAndResizeFunction
 from torchviz import make_dot
 import argparse
 import math
@@ -14,11 +17,65 @@ from utils.torch_utils import (
     time_synchronized, fuse_conv_and_bn, model_info, scale_img, initialize_weights, select_device)
 
 
+#class RoiAlign(nn.Module):
+#    def __init__(self, poolsize=7):  # detection layer
+#        super(RoiAlign, self).__init__()#
+
+#    def forward(self, x):
+#        print('x'*20)
+#        print(x)
+#        return x
+
+
+class Mask(nn.Module):
+    def __init__(self, depth, pool_size, image_shape, num_classes):
+        super(Mask, self).__init__()
+        self.depth = depth
+        self.pool_size = pool_size
+        self.image_shape = image_shape
+        self.num_classes = num_classes
+        self.padding = SamePad2d(kernel_size=3, stride=1)
+        self.conv1 = nn.Conv2d(self.depth, 256, kernel_size=3, stride=1)
+        self.bn1 = nn.BatchNorm2d(256, eps=0.001)
+        self.conv2 = nn.Conv2d(256, 256, kernel_size=3, stride=1)
+        self.bn2 = nn.BatchNorm2d(256, eps=0.001)
+        self.conv3 = nn.Conv2d(256, 256, kernel_size=3, stride=1)
+        self.bn3 = nn.BatchNorm2d(256, eps=0.001)
+        self.conv4 = nn.Conv2d(256, 256, kernel_size=3, stride=1)
+        self.bn4 = nn.BatchNorm2d(256, eps=0.001)
+        self.deconv = nn.ConvTranspose2d(256, 256, kernel_size=2, stride=2)
+        self.conv5 = nn.Conv2d(256, num_classes, kernel_size=1, stride=1)
+        self.sigmoid = nn.Sigmoid()
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x, rois):
+        x = pyramid_roi_align([rois] + x, self.pool_size, self.image_shape)
+        x = self.conv1(self.padding(x))
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(self.padding(x))
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.conv3(self.padding(x))
+        x = self.bn3(x)
+        x = self.relu(x)
+        x = self.conv4(self.padding(x))
+        x = self.bn4(x)
+        x = self.relu(x)
+        x = self.deconv(x)
+        x = self.relu(x)
+        x = self.conv5(x)
+        x = self.sigmoid(x)
+
+        return x
+
+
 class Detect(nn.Module):
     def __init__(self, nc=80, anchors=(), ch=()):  # detection layer
         super(Detect, self).__init__()
         self.stride = None  # strides computed during build
         self.nc = nc  # number of classes
+        self.ngpus=1
         self.no = nc + 5  # number of outputs per anchor
         self.nl = len(anchors)  # number of detection layers
         self.na = len(anchors[0]) // 2  # number of anchors
@@ -31,22 +88,84 @@ class Detect(nn.Module):
 
     def forward(self, x):
         # x = x.copy()  # for profiling
+        fpn_list=[]
         z = []  # inference output
+        z_new=[]
         self.training |= self.export
         for i in range(self.nl):
-            x[i] = self.m[i](x[i])  # conv
+            x[i] = self.m[i](x[i])  # conv  12,24,48,96,192
+            fpn_val=x[i].clone()
             bs, _, ny, nx = x[i].shape  # x(bs,255,20,20) to x(bs,3,20,20,85)
             x[i] = x[i].view(bs, self.na, self.no, ny, nx).permute(0, 1, 3, 4, 2).contiguous()
+            #print('new shape')
+            #print(x[i].shape)
 
-            if not self.training:  # inference
+            if  self.training:  # inference
+                self.stride=torch.tensor([8,16,32,64,128])
+                #print('grid')
+                #print(self.grid)
                 if self.grid[i].shape[2:4] != x[i].shape[2:4]:
                     self.grid[i] = self._make_grid(nx, ny).to(x[i].device)
-
+                #print('check')
+                #print(type(self.stride[i]))
                 y = x[i].sigmoid()
-                y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
-                y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
-                z.append(y.view(bs, -1, self.no))
+                #print('y'*100)
+                #print(y)
+                #print(y)
+                boxes_found=y.view(bs, -1, self.no)
+                z_new.append(boxes_found)
+                #y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
+                #y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                #z.append(y.view(bs, -1, self.no))
+            print(boxes_found.shape)
+            print(bs)
+            boxes_found=boxes_found.view(bs*boxes_found.shape[1],6)
+            print(boxes_found.shape)
+            boxes_found=boxes_found[torch.where(boxes_found[...,5]>0.5)]
+            boxes_found=boxes_found[...,0:4]
+            indexlist=[]
+            for bb in range(bs):
+                print('bs')
+                print(bb)
+                indexlist=indexlist+[bb]*boxes_found.shape[0]
+            indexlist=torch.tensor(indexlist, dtype=torch.int)
+            #indexlist=indexlist.float()
+            print('latest '*20)
+            print(fpn_val.shape)
+            print(boxes_found.shape)
+            print(indexlist.shape)
+            print(fpn_val.dtype)
+            print(boxes_found.dtype)
+            print(indexlist.dtype)
+            fpn_val=torch.tensor(fpn_val,dtype=torch.float32)
+            boxes_found=torch.tensor(boxes_found,dtype=torch.float32)
+            #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes_found, indexlist)
+            roi_align = RoIAlign(7,7)
 
+            # make crops:
+            crops = roi_align(fpn_val, boxes_found, indexlist)
+            print('crops shape')
+            print(crops.shape)
+            #boxes.extend(z_new[g][torch.where(z_new[g][...,4] >0.5)])
+            #fpn_val=fpn_val.unsqueeze(0)
+            #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes, indexes)
+            #print('pooled feature')
+            #print(pooled_features)
+        print('final shape')
+        print(x[1].shape)
+        print('z new '*300)
+        print(z_new[0].shape)
+        print(z_new)
+        print('z new '*300)
+
+        #print(type(z))
+        #print(len(z))
+        #print(type(z[0]))
+        #print('xxx '*30)
+        #print(type(x))
+        #print(
+        #print(type(x[0]))
+        #print(x[0].size())
         return x if self.training else (torch.cat(z, 1), x)
 
     @staticmethod
@@ -81,6 +200,9 @@ class Model(nn.Module):
             m.anchors /= m.stride.view(-1, 1, 1)
             check_anchor_order(m)
             self.stride = m.stride
+            print('Self Stride '*30)
+            print(self.stride)
+            print(self.stride.dtype)
             self._initialize_biases()  # only run once
             # print('Strides: %s' % m.stride.tolist())
 
@@ -221,6 +343,8 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
             args.append([ch[x + 1] for x in f])
             if isinstance(args[1], int):  # number of anchors
                 args[1] = [list(range(args[1] * 2))] * len(f)
+        #elif m is RoiAlign:
+        #    args=[7]
         else:
             c2 = ch[f]
 

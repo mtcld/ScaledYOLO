@@ -98,6 +98,13 @@ def test(data,
             t = time_synchronized()
             inf_out, train_out = model(img, augment=augment)  # inference and training outputs
             #inf_out, train_out = model(img.to(memory_format=torch.channels_last), augment=augment)  # inference and training outputs
+            print('Inf out')
+            print(inf_out.size())
+            print('Train out')
+            print(len(train_out))
+            print(train_out[0].size())
+            print(train_out[1].size())
+            print(train_out[2].size())
             t0 += time_synchronized() - t
 
             # Compute loss

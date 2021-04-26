@@ -445,7 +445,8 @@ def compute_loss(p, targets, model):  # predictions, targets, model
     lcls, lbox, lobj = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
     tcls, tbox, indices, anchors = build_targets(p, targets, model)  # targets
     h = model.hyp  # hyperparameters
-
+    #print('tbox')
+    #print(tbox)
     # Define criteria
     BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([h['cls_pw']])).to(device)
     BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.Tensor([h['obj_pw']])).to(device)
@@ -471,11 +472,13 @@ def compute_loss(p, targets, model):  # predictions, targets, model
         if n:
             nt += n  # cumulative targets
             ps = pi[b, a, gj, gi]  # prediction subset corresponding to targets
-
+            #print('ps')
+            #print(ps)
             # Regression
             pxy = ps[:, :2].sigmoid() * 2. - 0.5
             pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
             pbox = torch.cat((pxy, pwh), 1).to(device)  # predicted box
+            #print(pbox)
             giou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # giou(prediction, target)
             lbox += (1.0 - giou).mean()  # giou loss
 
