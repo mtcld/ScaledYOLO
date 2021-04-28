@@ -27,6 +27,35 @@ from utils.torch_utils import (
 #        return x
 
 
+class SamePad2d(nn.Module):
+    """Mimics tensorflow's 'SAME' padding.
+    """
+
+    def __init__(self, kernel_size, stride):
+        super(SamePad2d, self).__init__()
+        self.kernel_size = torch.nn.modules.utils._pair(kernel_size)
+        self.stride = torch.nn.modules.utils._pair(stride)
+
+    def forward(self, input):
+        in_width = input.size()[2]
+        in_height = input.size()[3]
+        out_width = math.ceil(float(in_width) / float(self.stride[0]))
+        out_height = math.ceil(float(in_height) / float(self.stride[1]))
+        pad_along_width = ((out_width - 1) * self.stride[0] +
+                           self.kernel_size[0] - in_width)
+        pad_along_height = ((out_height - 1) * self.stride[1] +
+                            self.kernel_size[1] - in_height)
+        pad_left = math.floor(pad_along_width / 2)
+        pad_top = math.floor(pad_along_height / 2)
+        pad_right = pad_along_width - pad_left
+        pad_bottom = pad_along_height - pad_top
+        return F.pad(input, (pad_left, pad_right, pad_top, pad_bottom), 'constant', 0)
+
+    def __repr__(self):
+        return self.__class__.__name__
+
+
+
 class Mask(nn.Module):
     def __init__(self, depth, pool_size, image_shape, num_classes):
         super(Mask, self).__init__()
@@ -48,17 +77,19 @@ class Mask(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x, rois):
-        x = pyramid_roi_align([rois] + x, self.pool_size, self.image_shape)
+    def forward(self, x):
+        print('check1')
         x = self.conv1(self.padding(x))
         x = self.bn1(x)
         x = self.relu(x)
+        print('check2')
         x = self.conv2(self.padding(x))
         x = self.bn2(x)
         x = self.relu(x)
         x = self.conv3(self.padding(x))
         x = self.bn3(x)
         x = self.relu(x)
+        print('checl3')
         x = self.conv4(self.padding(x))
         x = self.bn4(x)
         x = self.relu(x)
@@ -66,6 +97,7 @@ class Mask(nn.Module):
         x = self.relu(x)
         x = self.conv5(x)
         x = self.sigmoid(x)
+        print('check4')
 
         return x
 
@@ -92,6 +124,7 @@ class Detect(nn.Module):
         z = []  # inference output
         z_new=[]
         self.training |= self.export
+        pooled=[]
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv  12,24,48,96,192
             fpn_val=x[i].clone()
@@ -146,6 +179,18 @@ class Detect(nn.Module):
             crops = roi_align(fpn_val, boxes_found, indexlist)
             print('crops shape')
             print(crops.shape)
+            pooled.append(crops)
+
+        pooled = torch.cat(pooled, dim=0)
+        
+        #self.mask = Mask(24, 7, 1536, 1)
+        #mrcnn_mask = self.mask(pooled)
+
+
+        #print('final mask')
+        #print(mrcnn_mask.shape)
+        #print(mrcnn_mask)
+
             #boxes.extend(z_new[g][torch.where(z_new[g][...,4] >0.5)])
             #fpn_val=fpn_val.unsqueeze(0)
             #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes, indexes)
