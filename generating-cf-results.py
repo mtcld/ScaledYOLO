@@ -12,6 +12,10 @@ import numpy as np
 from tqdm import tqdm
 from collections import namedtuple
 
+# # Logging
+import logging
+# # Logging
+
 
 def rect_area_intersect(a, b):  # returns None if rectangles don't intersect
     dx = min(a.xmax, b.xmax) - max(a.xmin, b.xmin)
@@ -205,5 +209,14 @@ for i in range(len(data['images'])):
     print(len(org_bbox_dict.keys()))            
     print(tp_temp,fp_temp,fn_temp)                
 confusion_matrix={'true_positve_25':TP25,'true_positve_50':TP50,'false_positive':FP, 'false_negative':FN}
+
+# # Logging
+logging.basicConfig(filename='metrics.log', filemode='a', format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.info('true_positve_25: %s', TP25)
+logging.info('true_positve_50: %s', TP50)
+logging.info('false_positive: %s', FP)
+logging.info('false_negative: %s', FN)
+# # Logging
+
 with open(damage_name+'_confusion_matrix.json', 'w') as outfile:
         json.dump(confusion_matrix,outfile,indent=4,ensure_ascii = False)
