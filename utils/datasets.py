@@ -151,6 +151,96 @@ class LoadImages:  # for inference
     def __len__(self):
         return self.nf  # number of files
 
+class LoadImagesBatch:  # for inference
+    def __init__(self, paths, img_size=640):
+        if type(paths) == str:
+            p = str(Path(paths))  # os-agnostic
+            p = os.path.abspath(p)  # absolute path
+            if '*' in p:
+                files = sorted(glob.glob(p))  # glob
+            elif os.path.isdir(p):
+                files = sorted(glob.glob(os.path.join(p, '*.*')))  # dir
+            elif os.path.isfile(p):
+                files = [p]  # files
+            else:
+                raise Exception('ERROR: %s does not exist' % p)
+        
+        if type(paths) == list :
+            files = paths
+
+        images = [x for x in files if os.path.splitext(x)[-1].lower() in img_formats]
+        videos = [x for x in files if os.path.splitext(x)[-1].lower() in vid_formats]
+        #print('input :',images)
+        ni, nv = len(images), len(videos)
+
+        self.img_size = img_size
+        self.files = images + videos
+        self.nf = ni + nv  # number of files
+        self.video_flag = [False] * ni + [True] * nv
+        self.mode = 'images'
+        if any(videos):
+            self.new_video(videos[0])  # new video
+        else:
+            self.cap = None
+        assert self.nf > 0, 'No images or videos found in %s. Supported formats are:\nimages: %s\nvideos: %s' % \
+                            (p, img_formats, vid_formats)
+
+    def __iter__(self):
+        self.count = 0
+        return self
+
+    def __next__(self):
+        if self.count == self.nf:
+            raise StopIteration
+        path = self.files[self.count]
+
+        if self.video_flag[self.count]:
+            # Read video
+            self.mode = 'video'
+            ret_val, img0 = self.cap.read()
+            if not ret_val:
+                self.count += 1
+                self.cap.release()
+                if self.count == self.nf:  # last video
+                    raise StopIteration
+                else:
+                    path = self.files[self.count]
+                    self.new_video(path)
+                    ret_val, img0 = self.cap.read()
+
+            self.frame += 1
+            print('video %g/%g (%g/%g) %s: ' % (self.count + 1, self.nf, self.frame, self.nframes, path), end='')
+
+        else:
+            # Read image
+            self.count += 1
+            img0 = cv2.imread(path)  # BGR
+            #img0 = load_image2(self,path)[0]
+            assert img0 is not None, 'Image Not Found ' + path
+            #print('image %g/%g %s: ' % (self.count, self.nf, path), end='')
+
+        # Padded resize
+        h0,w0 = img0.shape[:2]
+        img,ratio,pad = letterbox(img0, new_shape=self.img_size,auto=False)
+        h,w = img.shape[:2]
+        shape = (h0, w0), (((h-2*pad[1]) / h0, (w-2*pad[0]) / w0), pad)
+        #print('after leter shape :',img.shape)
+
+        # Convert
+        img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+        img = np.ascontiguousarray(img)
+
+        # cv2.imwrite(path + '.letterbox.jpg', 255 * img.transpose((1, 2, 0))[:, :, ::-1])  # save letterbox image
+        #return path, img, img0, self.cap
+        return path, img, img0, shape
+
+    def new_video(self, path):
+        self.frame = 0
+        self.cap = cv2.VideoCapture(path)
+        self.nframes = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    def __len__(self):
+        return self.nf  # number of files
 
 class LoadWebcam:  # for inference
     def __init__(self, pipe=0, img_size=640):
@@ -206,6 +296,7 @@ class LoadWebcam:  # for inference
 
         # Padded resize
         img = letterbox(img0, new_shape=self.img_size)[0]
+        #print('after letter shape :',img.shape)
 
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
@@ -333,13 +424,14 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         # Check cache
         cache_path = str(Path(self.label_files[0]).parent) + '.cache'  # cached labels
+        #print("cache path : ",cache_path)
         if os.path.isfile(cache_path):
             cache = torch.load(cache_path)  # load
             if cache['hash'] != get_hash(self.label_files + self.img_files):  # dataset changed
                 cache = self.cache_labels(cache_path)  # re-cache
         else:
             cache = self.cache_labels(cache_path)  # cache
-
+        print(len(cache.keys()))
         # Get labels
         #with open('cache.json', 'w') as outfile:
         #    json.dump(cache,outfile,indent=4,ensure_ascii = False)
@@ -351,6 +443,19 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         #print(len(cache[self.img_files]))
 
         #print(self.img_files)
+        #print('debug')
+        #print([cache[x] for x in self.img_files])
+        #print(cache[self.img_files[0]])
+        #print(self.img_files[31992])
+        
+        print('wrong :',[x for x in self.img_files if cache[x] == None])
+        
+        #print(cache[self.img_files[55]])
+        #print(self.img_files[55])
+
+        #print(cache[self.img_files[379]])
+        #print(self.img_files[379])
+
         labels, shapes = zip(*[cache[x] for x in self.img_files])
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)
@@ -591,6 +696,17 @@ def load_image(self, index):
     else:
         return self.imgs[index], self.img_hw0[index], self.img_hw[index]  # img, hw_original, hw_resized
 
+def load_image2(self,path):
+    #path = self.img_files[index]
+    img = cv2.imread(path)  # BGR
+    assert img is not None, 'Image Not Found ' + path
+    h0, w0 = img.shape[:2]  # orig hw
+    r = self.img_size / max(h0, w0)  # resize image to img_size
+    if r != 1:  # always resize down, only resize up if training with augmentation
+        interp = cv2.INTER_AREA if r < 1 and not False else cv2.INTER_LINEAR
+        img = cv2.resize(img, (int(w0 * r), int(h0 * r)), interpolation=interp)
+    return img, (h0, w0), img.shape[:2]  # img, hw_original, hw_resized
+
 
 def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
     r = np.random.uniform(-1, 1, 3) * [hgain, sgain, vgain] + 1  # random gains
@@ -711,7 +827,7 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
         dw, dh = 0.0, 0.0
         new_unpad = (new_shape[1], new_shape[0])
         ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
-
+    #print('dw, dh',dw,dh)
     dw /= 2  # divide padding into 2 sides
     dh /= 2
 
@@ -719,7 +835,10 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114), auto=True, scale
         img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
     top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
     left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+    #print(top,bottom,left,right)
+    #print(img.shape)
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
+    #print(img.shape)
     return img, ratio, (dw, dh)
 
 
