@@ -1,13 +1,8 @@
-import argparse
-import cv2
 import torch
-from numpy import random
-import time
 from models.experimental import attempt_load
-from utils.datasets import LoadStreams, LoadImages, LoadImagesBatch
-from utils.general import (
-    check_img_size, non_max_suppression, apply_classifier, scale_coords, xyxy2xywh, plot_one_box, strip_optimizer)
-from utils.torch_utils import select_device, load_classifier, time_synchronized
+from utils.datasets import LoadImagesBatch
+from utils.general import (check_img_size, non_max_suppression, scale_coords)
+from utils.torch_utils import select_device
 from collections import OrderedDict
 
 class Dev_model():
