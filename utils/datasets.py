@@ -1,3 +1,4 @@
+import sys
 import glob
 import math
 import os
@@ -336,8 +337,20 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Define labels
         self.label_files = [x.replace('images', 'labels').replace(os.path.splitext(x)[-1], '.txt') for x in
                             self.img_files]
+        self.segm_files = [x.replace(os.path.splitext(x)[-1], '.json') for x in
+                            self.img_files]
 
+
+        print('Label files')
+        print(len(self.segm_files))
+        print(len(self.label_files))
+        print(len(self.img_files))
+
+        print(self.segm_files[0])
+        print(self.label_files[0])
+        print(self.img_files[0])
         # Check cache
+        #sys.exit()
         cache_path = str(Path(self.label_files[0]).parent) + '.cache'  # cached labels
         if os.path.isfile(cache_path):
             cache = torch.load(cache_path)  # load
@@ -358,8 +371,18 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         #print(self.img_files)
         labels, shapes = zip(*[cache[x] for x in self.img_files])
+        #print('labels')
+        #print(len(labels))
+        #sys.exit()
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)
+
+        self.segms=[]
+        for segm_path in self.segm_files:
+            with open(segm_path) as f:
+                d1=json.load(f)
+            annt_val=np.array(d1['segm'],np.float32)
+            self.segms.append(annt_val)
 
         # Rectangular Training  https://github.com/ultralytics/yolov3/issues/232
         if self.rect:
@@ -370,6 +393,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             self.img_files = [self.img_files[i] for i in irect]
             self.label_files = [self.label_files[i] for i in irect]
             self.labels = [self.labels[i] for i in irect]
+            self.segms = [self.segms[i] for i in irect]
             self.shapes = s[irect]  # wh
             ar = ar[irect]
 
@@ -490,6 +514,10 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
     #     return self
 
     def __getitem__(self, index):
+        #print('index')
+        #print(index)
+        #sys.exit()
+
         if self.image_weights:
             index = self.indices[index]
 
@@ -517,6 +545,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
             # Load labels
             labels = []
+            segm_out=self.segms[index]
             x = self.labels[index]
             if x.size > 0:
                 # Normalized xywh to pixel xyxy format
@@ -569,15 +598,15 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
-
-        return torch.from_numpy(img), labels_out, self.img_files[index], shapes
+        segm_out=torch.from_numpy(segm_out)
+        return torch.from_numpy(img), labels_out,segm_out , self.img_files[index], shapes
 
     @staticmethod
     def collate_fn(batch):
-        img, label, path, shapes = zip(*batch)  # transposed
+        img, label,segm, path, shapes = zip(*batch)  # transposed
         for i, l in enumerate(label):
             l[:, 0] = i  # add target image index for build_targets()
-        return torch.stack(img, 0), torch.cat(label, 0), path, shapes
+        return torch.stack(img, 0), torch.cat(label, 0), torch.cat(segm,0) , path, shapes
 
 
 # Ancillary functions --------------------------------------------------------------------------------------------------

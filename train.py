@@ -4,7 +4,7 @@ import os
 import random
 import time
 from pathlib import Path
-
+import sys
 import numpy as np
 import torch.distributed as dist
 import torch.nn.functional as F
@@ -146,7 +146,7 @@ def train(hyp, opt, device, tb_writer=None):
         model = DDP(model, device_ids=[opt.local_rank], output_device=(opt.local_rank))
 
     # Trainloader
-    dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, opt, hyp=hyp, augment=True,
+    dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, opt, hyp=hyp, augment=False,
                                             cache=opt.cache_images, rect=opt.rect, local_rank=rank,
                                             world_size=opt.world_size)
     print('D-'*100)
@@ -232,11 +232,20 @@ def train(hyp, opt, device, tb_writer=None):
             print(('\n' + '%10s' * 8) % ('Epoch', 'gpu_mem', 'GIoU', 'obj', 'cls', 'total', 'targets', 'img_size'))
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
-        for i, (imgs, targets, paths, _) in pbar:  # batch -------------------------------------------------------------
+        for i, (imgs, targets, segms,paths, _) in pbar:  # batch -------------------------------------------------------------
             print('paths')
             print(paths)
             print('-'*100)
             print(targets)
+            print('Segms')
+            print(segms.shape)
+            print(segms)
+
+            print('targets')
+            print(targets.shape)
+            print(targets)
+
+            #sys.exit()
             ni = i + nb * epoch  # number integrated batches (since train start)
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
 
@@ -262,7 +271,7 @@ def train(hyp, opt, device, tb_writer=None):
             # Autocast
             with amp.autocast(enabled=cuda):
                 # Forward                
-                pred = model(imgs)
+                pred,boxes_found = model(imgs)
                 print('Pred')
                 print(type(pred))
                 print(len(pred))
@@ -271,6 +280,10 @@ def train(hyp, opt, device, tb_writer=None):
                 #print(pred)
                 print('target')
                 print(targets)
+                
+                print('bf '*20 )
+                print(boxes_found.shape)
+                sys.exit()
                 #pred = model(imgs.to(memory_format=torch.channels_last))
 
                 # Loss
