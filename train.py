@@ -75,6 +75,9 @@ def bbox_overlaps(boxes1, boxes2):
     return overlaps
 
 def detection_target_layer(proposals, gt_boxes, gt_masks, config):
+    print('HELLO '*100)
+    print(proposals)
+    print(gt_boxes)
     """Subsamples proposals and generates target box refinment, class_ids,
     and masks for each.
     Inputs:
@@ -103,7 +106,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     #gt_boxes = gt_boxes.squeeze(0)
     #gt_masks = gt_masks.squeeze(0)
 
-    gt_class_ids=torch.zeros((len(gt_boxes)))
+    gt_class_ids=torch.ones((len(gt_boxes)))
     print('<>'*100)
     print('proposals')
     print(proposals.shape)
@@ -560,8 +563,9 @@ def train(hyp, opt, device, tb_writer=None):
                 print('target')
                 print(targets)
                 
-                print('bf '*20 )
+                print('bf\n'*20 )
                 print(boxes_found)
+                
 
                 targets_new=targets.clone()
                 targets_new=targets_new[...,2:6]
@@ -569,6 +573,8 @@ def train(hyp, opt, device, tb_writer=None):
                 targets_new[...,1]=targets_new[...,1]-targets_new[...,3]/2
                 targets_new[...,2]=targets_new[...,2]+targets_new[...,0]/2
                 targets_new[...,3]=targets_new[...,2]+targets_new[...,0]/2
+                
+                print(targets_new)
 
                 #overcheck=bbox_overlaps(boxes_found,targets_new)
                 print('Oo'*100)
