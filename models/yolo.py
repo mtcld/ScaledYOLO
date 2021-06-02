@@ -154,6 +154,8 @@ class Detect(nn.Module):
             print(bs)
             boxes_found=boxes_found.view(bs*boxes_found.shape[1],6)
             print(boxes_found.shape)
+            print('CHECk 5 '*20)
+            print(boxes_found)
             boxes_found=boxes_found[torch.where(boxes_found[...,5]>0.5)]
             boxes_found=boxes_found[...,0:4]
             indexlist=[]
@@ -211,7 +213,15 @@ class Detect(nn.Module):
         #print(
         #print(type(x[0]))
         #print(x[0].size())
-        return (x if self.training else (torch.cat(z, 1), x), boxes_found )
+
+
+        boxes_found_new=boxes_found.clone()
+        boxes_found_new[...,0]=boxes_found_new[...,0]-boxes_found_new[...,2]/2
+        boxes_found_new[...,1]=boxes_found_new[...,1]-boxes_found_new[...,3]/2
+        boxes_found_new[...,2]=boxes_found_new[...,2]+boxes_found_new[...,0]/2
+        boxes_found_new[...,3]=boxes_found_new[...,2]+boxes_found_new[...,0]/2
+
+        return (x if self.training else (torch.cat(z, 1), x), boxes_found_new )
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
