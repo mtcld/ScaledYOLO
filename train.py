@@ -1,4 +1,15 @@
 import argparse
+from roi_align.crop_and_resize import CropAndResizeFunction
+import torch
+#import roi_align.crop_and_resize_cpu as crop_and_resize_cpu
+#if torch.cuda.is_available():
+#    import roi_align.crop_and_resize_gpu as crop_and_resize_gpu
+from roi_align import RoIAlign      # RoIAlign module
+from roi_align import CropAndResize # crop_and_resize module
+import math
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.autograd import Function
 import config
 import math
 import os
@@ -29,6 +40,72 @@ from utils.general import (
 from utils.google_utils import attempt_download
 from utils.torch_utils import init_seeds, ModelEMA, select_device, intersect_dicts
 
+class CropAndResizeFunction(Function):
+
+    @staticmethod
+    def forward(ctx, image, boxes, box_ind, crop_height, crop_width, extrapolation_value=0):
+        ctx.crop_height = crop_height
+        ctx.crop_width = crop_width
+        ctx.extrapolation_value = extrapolation_value
+        crops = torch.zeros_like(image)
+
+        if image.is_cuda:
+            crop_and_resize_gpu.forward(
+                image, boxes, box_ind,
+                ctx.extrapolation_value, ctx.crop_height, ctx.crop_width, crops)
+        else:
+            crop_and_resize_cpu.forward(
+                image, boxes, box_ind,
+                ctx.extrapolation_value, ctx.crop_height, ctx.crop_width, crops)
+
+        # save for backward
+        ctx.im_size = image.size()
+        ctx.save_for_backward(boxes, box_ind)
+
+        return crops
+
+    @staticmethod
+    def backward(ctx, grad_outputs):
+        boxes, box_ind = ctx.saved_tensors
+
+        grad_outputs = grad_outputs.contiguous()
+        grad_image = torch.zeros_like(grad_outputs).resize_(*ctx.im_size)
+
+        if grad_outputs.is_cuda:
+            crop_and_resize_gpu.backward(
+                grad_outputs, boxes, box_ind, grad_image
+            )
+        else:
+            crop_and_resize_cpu.backward(
+                grad_outputs, boxes, box_ind, grad_image
+            )
+
+        return grad_image, None, None, None, None, None
+
+
+
+def box_refinement(box, gt_box):
+    """Compute refinement needed to transform box to gt_box.
+    box and gt_box are [N, (y1, x1, y2, x2)]
+    """
+
+    height = box[:, 2] - box[:, 0]
+    width = box[:, 3] - box[:, 1]
+    center_y = box[:, 0] + 0.5 * height
+    center_x = box[:, 1] + 0.5 * width
+
+    gt_height = gt_box[:, 2] - gt_box[:, 0]
+    gt_width = gt_box[:, 3] - gt_box[:, 1]
+    gt_center_y = gt_box[:, 0] + 0.5 * gt_height
+    gt_center_x = gt_box[:, 1] + 0.5 * gt_width
+
+    dy = (gt_center_y - center_y) / height
+    dx = (gt_center_x - center_x) / width
+    dh = torch.log(gt_height / height)
+    dw = torch.log(gt_width / width)
+
+    result = torch.stack([dy, dx, dh, dw], dim=1)
+    return result
 
 def bbox_overlaps(boxes1, boxes2):
     """Computes IoU overlaps between two sets of boxes.
@@ -38,10 +115,10 @@ def bbox_overlaps(boxes1, boxes2):
     # every boxes1 against every boxes2 without loops.
     # TF doesn't have an equivalent to np.repeate() so simulate it
     # using tf.tile() and tf.reshape.
-    print('Overlap check -- '*10)
-    print(boxes1)
-    print(boxes2)
-    print('--'*40)
+    #print('Overlap check -- '*10)
+    #print(boxes1)
+    #print(boxes2)
+    #print('--'*40)
 
     boxes1_repeat = boxes2.size()[0]
     boxes2_repeat = boxes1.size()[0]
@@ -69,8 +146,8 @@ def bbox_overlaps(boxes1, boxes2):
     iou = intersection / union
     overlaps = iou.view(boxes2_repeat, boxes1_repeat)
 
-    print(overlaps)
-    print('--'*40)
+    #print(overlaps)
+    #print('--'*40)
 
     return overlaps
 
@@ -122,11 +199,15 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     # Handle COCO crowds
     # A crowd box in COCO is a bounding box around several instances. Exclude
     # them from training. A crowd box is given a negative class ID.
-    if torch.nonzero(gt_class_ids < 0).size():
+    print('Zzz'*30)
+    id_non_zero=torch.nonzero(gt_class_ids < 0).size()[0]
+    print(id_non_zero)
+    if id_non_zero !=0 :
+        print('Condition Satisfied')
         crowd_ix = torch.nonzero(gt_class_ids < 0)[:, 0]
         non_crowd_ix = torch.nonzero(gt_class_ids > 0)[:, 0]
-        print('non_crowd_ix.data')
-        print(non_crowd_ix.data)
+        #print('non_crowd_ix.data')
+        #print(non_crowd_ix.data)
         crowd_boxes = gt_boxes[crowd_ix.data, :]
         crowd_masks = gt_masks[crowd_ix.data, :, :]
         gt_class_ids = gt_class_ids[non_crowd_ix.data]
@@ -153,7 +234,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
 
     # Subsample ROIs. Aim for 33% positive
     # Positive ROIs
-    if torch.nonzero(positive_roi_bool).size():
+    if torch.nonzero(positive_roi_bool).size()[0]!=0:
         positive_indices = torch.nonzero(positive_roi_bool)[:, 0]
 
         positive_count = int(config.TRAIN_ROIS_PER_IMAGE *
@@ -173,17 +254,18 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         roi_gt_class_ids = gt_class_ids[roi_gt_box_assignment.data]
 
         # Compute bbox refinement for positive ROIs
-        deltas = Variable(utils.box_refinement(positive_rois.data, roi_gt_boxes.data), requires_grad=False)
+        deltas = Variable(box_refinement(positive_rois.data, roi_gt_boxes.data), requires_grad=False)
         std_dev = Variable(torch.from_numpy(config.BBOX_STD_DEV).float(), requires_grad=False)
         if config.GPU_COUNT:
             std_dev = std_dev.cuda()
+            deltas=deltas.cuda()
         deltas /= std_dev
 
         # Assign positive ROIs to GT masks
         roi_masks = gt_masks[roi_gt_box_assignment.data,:,:]
 
-        print('roi_gt_box_assignment.data')
-        print(roi_gt_box_assignment.data)
+        #print('roi_gt_box_assignment.data')
+        #print(roi_gt_box_assignment.data)
 
         # Assign positive ROIs to GT masks
         #print('Gt_masks')
@@ -208,10 +290,14 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
             x2 = (x2 - gt_x1) / gt_w
             boxes = torch.cat([y1, x1, y2, x2], dim=1)
         box_ids = Variable(torch.arange(roi_masks.size()[0]), requires_grad=False).int()
-        if config.GPU_COUNT:
-            box_ids = box_ids.cuda()
-        masks = Variable(CropAndResizeFunction(config.MASK_SHAPE[0], config.MASK_SHAPE[1], 0)(roi_masks.unsqueeze(1), boxes, box_ids).data, requires_grad=False)
+        #if config.GPU_COUNT:
+        box_ids = box_ids.to('cpu')
+        #masks = torch.tensor(CropAndResizeFunction(config.MASK_SHAPE[0], config.MASK_SHAPE[1], 0)(roi_masks.unsqueeze(1), boxes, box_ids).data)
+        roi_align_mask=RoIAlign(28, 28)
+        masks=roi_align_mask(roi_masks.unsqueeze(1), boxes, box_ids).data
         masks = masks.squeeze(1)
+        print('Running \n'*300)
+        #sys.exit()
         #print('Masks')
         #print(masks.size())
         #print('Gt_masks')
@@ -230,6 +316,12 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
 
     # 2. Negative ROIs are those with < 0.5 with every GT box. Skip crowds.
     negative_roi_bool = roi_iou_max < 0.5
+    no_crowd_bool=no_crowd_bool>0.5
+    #print(no_crowd_bool)
+    #print(negative_roi_bool)
+    #print(negative_roi_bool.is_cuda)
+    #print(no_crowd_bool.is_cuda)
+    no_crowd_bool = no_crowd_bool.to(device='cpu')
     negative_roi_bool = negative_roi_bool & no_crowd_bool
     # Negative ROIs. Add enough to maintain positive:negative ratio.
     if torch.nonzero(negative_roi_bool).size() and positive_count>0:
@@ -253,6 +345,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         zeros = Variable(torch.zeros(negative_count), requires_grad=False).int()
         if config.GPU_COUNT:
             zeros = zeros.cuda()
+            roi_gt_class_ids=roi_gt_class_ids.cuda()
         roi_gt_class_ids = torch.cat([roi_gt_class_ids, zeros], dim=0)
         zeros = Variable(torch.zeros(negative_count,4), requires_grad=False)
         if config.GPU_COUNT:
@@ -261,6 +354,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         zeros = Variable(torch.zeros(negative_count,config.MASK_SHAPE[0],config.MASK_SHAPE[1]), requires_grad=False)
         if config.GPU_COUNT:
             zeros = zeros.cuda()
+            masks=masks.cuda()
         masks = torch.cat([masks, zeros], dim=0)
     elif positive_count > 0:
         rois = positive_rois
@@ -269,6 +363,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         zeros = Variable(torch.zeros(negative_count), requires_grad=False)
         if config.GPU_COUNT:
             zeros = zeros.cuda()
+            roi_gt_class_ids=roi_gt_class_ids.cuda()
         roi_gt_class_ids = zeros
         zeros = Variable(torch.zeros(negative_count,4), requires_grad=False).int()
         if config.GPU_COUNT:
@@ -579,9 +674,12 @@ def train(hyp, opt, device, tb_writer=None):
                 #overcheck=bbox_overlaps(boxes_found,targets_new)
                 print('Oo'*100)
                 roisz, roi_gt_class_idsz, deltasz, masksz=detection_target_layer(boxes_found,  targets_new, segms, config)
-                #sys.exit()
+                print('Shapes')
+                print(masksz.shape)
+                print(roisz.shape)
+                sys.exit()
                 #pred = model(imgs.to(memory_format=torch.channels_last))
-
+                print('Stuck here')
                 # Loss
                 loss, loss_items = compute_loss(pred, targets.to(device), model)  # scaled by batch_size
                 if rank != -1:
