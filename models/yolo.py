@@ -218,8 +218,8 @@ class Detect(nn.Module):
         boxes_found_new=boxes_found.clone()
         boxes_found_new[...,0]=boxes_found_new[...,0]-boxes_found_new[...,2]/2
         boxes_found_new[...,1]=boxes_found_new[...,1]-boxes_found_new[...,3]/2
-        boxes_found_new[...,2]=boxes_found_new[...,2]+boxes_found_new[...,0]/2
-        boxes_found_new[...,3]=boxes_found_new[...,2]+boxes_found_new[...,0]/2
+        boxes_found_new[...,2]=boxes_found_new[...,2]+boxes_found_new[...,0]
+        boxes_found_new[...,3]=boxes_found_new[...,2]+boxes_found_new[...,1]
 
         return (x if self.training else (torch.cat(z, 1), x), boxes_found_new )
 

@@ -225,7 +225,12 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
 
     # Compute overlaps matrix [proposals, gt_boxes]
     overlaps = bbox_overlaps(proposals, gt_boxes)
-
+    print('propsoal')
+    print(proposals)
+    print('gt_boxes')
+    print(gt_boxes)
+    print('overlaps')
+    print(overlaps)
     # Determine postive and negative ROIs
     roi_iou_max = torch.max(overlaps, dim=1)[0]
 
@@ -236,7 +241,8 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     # Positive ROIs
     if torch.nonzero(positive_roi_bool).size()[0]!=0:
         positive_indices = torch.nonzero(positive_roi_bool)[:, 0]
-
+        print('positive indieces')
+        print(positive_indices)
         positive_count = int(config.TRAIN_ROIS_PER_IMAGE *
                              config.ROI_POSITIVE_RATIO)
         rand_idx = torch.randperm(positive_indices.size()[0])
@@ -295,7 +301,11 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         #masks = torch.tensor(CropAndResizeFunction(config.MASK_SHAPE[0], config.MASK_SHAPE[1], 0)(roi_masks.unsqueeze(1), boxes, box_ids).data)
         roi_align_mask=RoIAlign(28, 28)
         masks=roi_align_mask(roi_masks.unsqueeze(1), boxes, box_ids).data
+        print('Masks')
+        print(masks.shape)
+        print(masks)
         masks = masks.squeeze(1)
+        print(masks.shape)
         print('Running \n'*300)
         #sys.exit()
         #print('Masks')
@@ -385,18 +395,18 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
             masks = masks.cuda()
     print('masks')
     print(masks.size())
-    print('Masks')
-    print(masks.size())
     print('Gt_masks')
     print(gt_masks.size())
     print('rois')
     print(rois.size())
+    print('positive and negative counts')
+    print(positive_count,negative_count)
     #print('roi_gt_box_assignment.data')
     # print(roi_gt_box_assignment.data)
     #    roi_masks = gt_masks[roi_gt_box_assignment.data,:,:]
     #print('Roi_masks')
     #print(roi_masks.size())
-
+    #sys.exit()
     return rois, roi_gt_class_ids, deltas, masks
 
 
@@ -666,8 +676,8 @@ def train(hyp, opt, device, tb_writer=None):
                 targets_new=targets_new[...,2:6]
                 targets_new[...,0]=targets_new[...,0]-targets_new[...,2]/2
                 targets_new[...,1]=targets_new[...,1]-targets_new[...,3]/2
-                targets_new[...,2]=targets_new[...,2]+targets_new[...,0]/2
-                targets_new[...,3]=targets_new[...,2]+targets_new[...,0]/2
+                targets_new[...,2]=targets_new[...,2]+targets_new[...,0]
+                targets_new[...,3]=targets_new[...,3]+targets_new[...,1]
                 
                 print(targets_new)
 

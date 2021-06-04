@@ -84,7 +84,7 @@ def test(data,
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class = [], [], [], []
     #model = model.to(memory_format=torch.channels_last)
-    for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
+    for batch_i, (img, targets,segms, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
         img = img.to(device, non_blocking=True)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
