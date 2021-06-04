@@ -333,11 +333,20 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     #print(no_crowd_bool.is_cuda)
     no_crowd_bool = no_crowd_bool.to(device='cpu')
     negative_roi_bool = negative_roi_bool & no_crowd_bool
+    print('negative_roi_bool')
+    print(negative_roi_bool)
+    print(torch.nonzero(negative_roi_bool).size()[0])
+    #sys.exit()
     # Negative ROIs. Add enough to maintain positive:negative ratio.
-    if torch.nonzero(negative_roi_bool).size() and positive_count>0:
+    if torch.nonzero(negative_roi_bool).size()[0]!=0 :
+        print('condition a')
         negative_indices = torch.nonzero(negative_roi_bool)[:, 0]
+        print(negative_indices)
         r = 1.0 / config.ROI_POSITIVE_RATIO
-        negative_count = int(r * positive_count - positive_count)
+        if positive_count>0:
+            negative_count = int(r * positive_count - positive_count)
+        else:
+            negative_count=len(negative_indices)
         rand_idx = torch.randperm(negative_indices.size()[0])
         rand_idx = rand_idx[:negative_count]
         if config.GPU_COUNT:
@@ -345,6 +354,8 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         negative_indices = negative_indices[rand_idx]
         negative_count = negative_indices.size()[0]
         negative_rois = proposals[negative_indices.data, :]
+        print('negative indices')
+        print(negative_indices)
     else:
         negative_count = 0
 
@@ -353,10 +364,11 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     if positive_count > 0 and negative_count > 0:
         rois = torch.cat((positive_rois, negative_rois), dim=0)
         zeros = Variable(torch.zeros(negative_count), requires_grad=False).int()
+        roi_gt_class_ids = torch.cat([roi_gt_class_ids, zeros], dim=0)
         if config.GPU_COUNT:
             zeros = zeros.cuda()
             roi_gt_class_ids=roi_gt_class_ids.cuda()
-        roi_gt_class_ids = torch.cat([roi_gt_class_ids, zeros], dim=0)
+        #roi_gt_class_ids = torch.cat([roi_gt_class_ids, zeros], dim=0)
         zeros = Variable(torch.zeros(negative_count,4), requires_grad=False)
         if config.GPU_COUNT:
             zeros = zeros.cuda()
@@ -371,10 +383,11 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     elif negative_count > 0:
         rois = negative_rois
         zeros = Variable(torch.zeros(negative_count), requires_grad=False)
+        roi_gt_class_ids = zeros
         if config.GPU_COUNT:
             zeros = zeros.cuda()
             roi_gt_class_ids=roi_gt_class_ids.cuda()
-        roi_gt_class_ids = zeros
+        #roi_gt_class_ids = zeros
         zeros = Variable(torch.zeros(negative_count,4), requires_grad=False).int()
         if config.GPU_COUNT:
             zeros = zeros.cuda()
@@ -687,6 +700,7 @@ def train(hyp, opt, device, tb_writer=None):
                 print('Shapes')
                 print(masksz.shape)
                 print(roisz.shape)
+                print(roi_gt_class_idsz)
                 sys.exit()
                 #pred = model(imgs.to(memory_format=torch.channels_last))
                 print('Stuck here')
