@@ -185,8 +185,8 @@ class Detect(nn.Module):
 
         pooled = torch.cat(pooled, dim=0)
         
-        #self.mask = Mask(24, 7, 1536, 1)
-        #mrcnn_mask = self.mask(pooled)
+        self.mask = Mask(24, 7, 1536, 1)
+        mrcnn_mask = self.mask(pooled)
 
 
         #print('final mask')
@@ -221,7 +221,7 @@ class Detect(nn.Module):
         boxes_found_new[...,2]=boxes_found_new[...,2]+boxes_found_new[...,0]
         boxes_found_new[...,3]=boxes_found_new[...,2]+boxes_found_new[...,1]
 
-        return (x if self.training else (torch.cat(z, 1), x), boxes_found_new )
+        return (x if self.training else (torch.cat(z, 1), x), boxes_found_new,mrcnn_mask )
 
     @staticmethod
     def _make_grid(nx=20, ny=20):

@@ -40,6 +40,42 @@ from utils.general import (
 from utils.google_utils import attempt_download
 from utils.torch_utils import init_seeds, ModelEMA, select_device, intersect_dicts
 
+def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
+    """Mask binary cross-entropy loss for the masks head.
+    target_masks: [batch, num_rois, height, width].
+        A float32 tensor of values 0 or 1. Uses zero padding to fill array.
+    target_class_ids: [batch, num_rois]. Integer class IDs. Zero padded.
+    pred_masks: [batch, proposals, height, width, num_classes] float32 tensor
+                with values from 0 to 1.
+    """
+    if target_class_ids.size():
+        # Only positive ROIs contribute to the loss. And only
+        # the class specific mask of each ROI.
+        positive_ix = torch.nonzero(target_class_ids > 0)[:, 0]
+        positive_class_ids = target_class_ids[positive_ix.data].long()
+        indices = torch.stack((positive_ix, positive_class_ids), dim=1)
+        print('Initial')
+        print(target_masks.size())
+        print(pred_masks.size())
+        # Gather the masks (predicted and true) that contribute to loss
+        y_true = target_masks[indices[:,0].data,:,:]
+        y_pred = pred_masks[indices[:,0].data,indices[:,1].data,:,:]
+
+        print('y_true')
+        print(y_true.size())
+        print('y_pred')
+        print(y_pred.size())
+
+        # Binary cross entropy
+        loss = F.binary_cross_entropy(y_pred, y_true)
+    else:
+        loss = Variable(torch.FloatTensor([0]), requires_grad=False)
+        if target_class_ids.is_cuda:
+            loss = loss.cuda()
+
+    return loss
+
+
 class CropAndResizeFunction(Function):
 
     @staticmethod
@@ -671,7 +707,7 @@ def train(hyp, opt, device, tb_writer=None):
             # Autocast
             with amp.autocast(enabled=cuda):
                 # Forward                
-                pred,boxes_found = model(imgs)
+                pred,boxes_found,pred_mask = model(imgs)
                 print('Pred')
                 print(type(pred))
                 print(len(pred))
@@ -706,6 +742,9 @@ def train(hyp, opt, device, tb_writer=None):
                 print('Stuck here')
                 # Loss
                 loss, loss_items = compute_loss(pred, targets.to(device), model)  # scaled by batch_size
+                print('loss_mask')
+                loss_mask=compute_mrcnn_mask_loss(masksz,roi_gt_class_idsz,pred_mask)
+                print(loss_mask)
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
                 # if not torch.isfinite(loss):
