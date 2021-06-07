@@ -181,11 +181,12 @@ class Detect(nn.Module):
             crops = roi_align(fpn_val, boxes_found, indexlist)
             print('crops shape')
             print(crops.shape)
+            crops=crops.cuda()
             pooled.append(crops)
 
         pooled = torch.cat(pooled, dim=0)
-        
-        self.mask = Mask(24, 7, 1536, 1)
+        #pooled=pooled.cuda()
+        self.mask = Mask(24, 7, 1536, 1).to('cuda')
         mrcnn_mask = self.mask(pooled)
 
 
@@ -429,6 +430,8 @@ if __name__ == '__main__':
     opt.cfg = check_file(opt.cfg)  # check file
     device = select_device(opt.device)
 
+    print('DEVICE')
+    print(device)
     # Create model
     model = Model(opt.cfg).to(device)
     model.train()

@@ -462,6 +462,8 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
 
 def train(hyp, opt, device, tb_writer=None):
     print(f'Hyperparameters {hyp}')
+    print(device)
+    #sys.exit()
     log_dir = Path(tb_writer.log_dir) if tb_writer else Path(opt.logdir) / 'evolve'  # logging directory
     wdir = str(log_dir / 'weights') + os.sep  # weights directory
     os.makedirs(wdir, exist_ok=True)
@@ -478,6 +480,8 @@ def train(hyp, opt, device, tb_writer=None):
     with open(log_dir / 'opt.yaml', 'w') as f:
         yaml.dump(vars(opt), f, sort_keys=False)
 
+    print('DDDDDDDDDDDDDDD \n'*30)
+    print(device)
     # Configure
     cuda = device.type != 'cpu'
     init_seeds(2 + rank)
@@ -491,16 +495,34 @@ def train(hyp, opt, device, tb_writer=None):
     # Model
     pretrained = weights.endswith('.pt')
     if pretrained:
+        print('Pretrained')
+        #sys.exit()
         with torch_distributed_zero_first(rank):
             attempt_download(weights)  # download if not found locally
+        print('device 2')
+        print(device)
         ckpt = torch.load(weights, map_location=device)  # load checkpoint
+        print(opt.cfg)
+        #sys.exit()
         model = Model(opt.cfg or ckpt['model'].yaml, ch=3, nc=nc).to(device)  # create
+        model=model.cuda()
         exclude = ['anchor'] if opt.cfg else []  # exclude keys
         state_dict = ckpt['model'].float().state_dict()  # to FP32
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
+        print('state_dict')
+        print(state_dict)
+        sys.exit()
         model.load_state_dict(state_dict, strict=False)  # load
+        print(model.dtype)
+        #sys.exit()
         print('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
     else:
+        print('Not Pretrained')
+        sys.exit()
+
+        print('device 2')
+        print(device)
+
         model = Model(opt.cfg, ch=3, nc=nc).to(device)# create
         #model = model.to(memory_format=torch.channels_last)  # create
 
