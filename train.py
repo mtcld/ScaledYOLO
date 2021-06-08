@@ -48,7 +48,7 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
     pred_masks: [batch, proposals, height, width, num_classes] float32 tensor
                 with values from 0 to 1.
     """
-    if target_class_ids.size():
+    if target_class_ids.size()[0]:
         # Only positive ROIs contribute to the loss. And only
         # the class specific mask of each ROI.
         positive_ix = torch.nonzero(target_class_ids > 0)[:, 0]
@@ -67,7 +67,7 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
         print(y_pred.size())
 
         # Binary cross entropy
-        loss = F.binary_cross_entropy(y_pred, y_true)
+        loss = F.binary_cross_entropy_with_logits(y_pred, y_true)
     else:
         loss = Variable(torch.FloatTensor([0]), requires_grad=False)
         if target_class_ids.is_cuda:
@@ -480,8 +480,8 @@ def train(hyp, opt, device, tb_writer=None):
     with open(log_dir / 'opt.yaml', 'w') as f:
         yaml.dump(vars(opt), f, sort_keys=False)
 
-    print('DDDDDDDDDDDDDDD \n'*30)
-    print(device)
+    #print('DDDDDDDDDDDDDDD \n'*30)
+    #print(device)
     # Configure
     cuda = device.type != 'cpu'
     init_seeds(2 + rank)
@@ -509,16 +509,16 @@ def train(hyp, opt, device, tb_writer=None):
         exclude = ['anchor'] if opt.cfg else []  # exclude keys
         state_dict = ckpt['model'].float().state_dict()  # to FP32
         state_dict = intersect_dicts(state_dict, model.state_dict(), exclude=exclude)  # intersect
-        print('state_dict')
-        print(state_dict)
-        sys.exit()
+        #print('state_dict')
+        #print(state_dict)
+        #sys.exit()
         model.load_state_dict(state_dict, strict=False)  # load
-        print(model.dtype)
+        #print(model.dtype)
         #sys.exit()
         print('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
     else:
         print('Not Pretrained')
-        sys.exit()
+        #sys.exit()
 
         print('device 2')
         print(device)
@@ -597,7 +597,7 @@ def train(hyp, opt, device, tb_writer=None):
 
     # DDP mode
     if cuda and rank != -1:
-        model = DDP(model, device_ids=[opt.local_rank], output_device=(opt.local_rank))
+        model = DDP(model, device_ids=[opt.local_rank], output_device=(opt.local_rank),find_unused_parameters=True)
 
     # Trainloader
     dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, opt, hyp=hyp, augment=False,
@@ -741,7 +741,7 @@ def train(hyp, opt, device, tb_writer=None):
                 
                 print('bf\n'*20 )
                 print(boxes_found)
-                
+                print(boxes_found.shape) 
 
                 targets_new=targets.clone()
                 targets_new=targets_new[...,2:6]
@@ -754,27 +754,45 @@ def train(hyp, opt, device, tb_writer=None):
 
                 #overcheck=bbox_overlaps(boxes_found,targets_new)
                 print('Oo'*100)
-                roisz, roi_gt_class_idsz, deltasz, masksz=detection_target_layer(boxes_found,  targets_new, segms, config)
-                print('Shapes')
-                print(masksz.shape)
-                print(roisz.shape)
-                print(roi_gt_class_idsz)
-                sys.exit()
-                #pred = model(imgs.to(memory_format=torch.channels_last))
-                print('Stuck here')
-                # Loss
-                loss, loss_items = compute_loss(pred, targets.to(device), model)  # scaled by batch_size
-                print('loss_mask')
-                loss_mask=compute_mrcnn_mask_loss(masksz,roi_gt_class_idsz,pred_mask)
-                print(loss_mask)
+
+                if boxes_found.shape[0] != 0:
+                    roisz, roi_gt_class_idsz, deltasz, masksz=detection_target_layer(boxes_found,  targets_new, segms, config)
+                    print('Shapes')
+                    print(masksz.shape)
+                    print(roisz.shape)
+                    print(roisz.dtype)
+                    print(roi_gt_class_idsz)
+                    # Loss
+                    loss, loss_items = compute_loss(pred, targets.to(device), model)
+                    print('loss')
+                    print(loss)
+                    loss_mask=compute_mrcnn_mask_loss(masksz,roi_gt_class_idsz,pred_mask)
+                    print(loss_mask)
+
+                else:
+                    print('continue')
+                    break
+                    roisz=torch.tensor([])
+                    roi_gt_class_idsz=torch.tensor([])
+                    deltasz=torch.tensor([])
+                    masksz=torch.tensor([])
+                    # Loss
+                    loss, loss_items = torch.tensor([10.5],requires_grad=True).to(device), torch.tensor([10.5],requires_grad=True).to(device)
+                    print('loss')
+                    print(loss)
+                    #loss=loss.long()
+                    #loss_items=loss_items.long()
+                    #print('loss_mask')
+                    loss_mask=torch.tensor([10.5],requires_grad=True).to(device)
+                    print(loss_mask)
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
                 # if not torch.isfinite(loss):
                 #     print('WARNING: non-finite loss, ending training ', loss_items)
                 #     return results
-
+            total_loss=loss+loss_mask
             # Backward
-            scaler.scale(loss).backward()
+            scaler.scale(total_loss).backward()
 
             # Optimize
             if ni % accumulate == 0:
@@ -804,7 +822,7 @@ def train(hyp, opt, device, tb_writer=None):
 
         # Scheduler
         scheduler.step()
-
+        '''
         # DDP process 0 or single-GPU
         if rank in [-1, 0]:
             # mAP
@@ -859,7 +877,7 @@ def train(hyp, opt, device, tb_writer=None):
                 del ckpt
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training
-
+        '''
     if rank in [-1, 0]:
         # Strip optimizers
         n = ('_' if len(opt.name) and not opt.name.isnumeric() else '') + opt.name

@@ -156,7 +156,7 @@ class Detect(nn.Module):
             print(boxes_found.shape)
             print('CHECk 5 '*20)
             print(boxes_found)
-            boxes_found=boxes_found[torch.where(boxes_found[...,5]>0.5)]
+            boxes_found=boxes_found[torch.where(boxes_found[...,4]>0.3)]
             boxes_found=boxes_found[...,0:4]
             indexlist=[]
             for bb in range(bs):
