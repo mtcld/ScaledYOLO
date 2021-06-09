@@ -49,32 +49,52 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
     pred_masks: [batch, proposals, height, width, num_classes] float32 tensor
                 with values from 0 to 1.
     """
+    print('target class ids')
+    print(target_class_ids)
+    print('pred mask')
+    print(pred_masks)
+    print('target mask')
+    print(target_masks)
     if target_class_ids.size()[0]:
         # Only positive ROIs contribute to the loss. And only
         # the class specific mask of each ROI.
         positive_ix = torch.nonzero(target_class_ids > 0)[:, 0]
         positive_class_ids = target_class_ids[positive_ix.data].long()
         indices = torch.stack((positive_ix, positive_class_ids), dim=1)
+
+        print('Indices')
+        print(indices)
+        print(indices[:,0].data)
         print('Initial')
         print(target_masks.size())
         print(pred_masks.size())
+
+        print('Lets see '*20)
+        print(target_masks[indices[:,0].data,:,:])
+        #sys.exit()
         # Gather the masks (predicted and true) that contribute to loss
         y_true = target_masks[indices[:,0].data,:,:]
         y_pred = pred_masks[indices[:,0].data,indices[:,1].data,:,:]
-
+        print('target_masks')
+        print(target_masks)
         print('y_true')
         print(y_true.size())
+        print(y_true)
         print('y_pred')
         print(y_pred.size())
+        #print(y_pred)
 
+        print('stop 1 '*100)
         # Binary cross entropy
         loss = F.binary_cross_entropy_with_logits(y_pred, y_true)
+        print(loss)
+        print('stop 2 '*100)
         #loss = loss.clamp (min=-10, max=10)
         print('item')
-        print(loss.item())
+        print(loss)
         with torch.no_grad():
             loss[torch.isnan(loss)] = 10.0
-
+        print('item 2')
         #if math.isnan(loss.item()):
         #    loss.item()=10.0
     else:
@@ -164,7 +184,8 @@ def bbox_overlaps(boxes1, boxes2):
     #print(boxes1)
     #print(boxes2)
     #print('--'*40)
-
+    boxes1=boxes1.cuda()
+    boxes2=boxes2.cuda()
     boxes1_repeat = boxes2.size()[0]
     boxes2_repeat = boxes1.size()[0]
     boxes1 = boxes1.repeat(1,boxes1_repeat).view(-1,4)
@@ -227,7 +248,8 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     #gt_class_ids = gt_class_ids.squeeze(0)
     #gt_boxes = gt_boxes.squeeze(0)
     #gt_masks = gt_masks.squeeze(0)
-
+    gt_boxes=gt_boxes.to('cpu')
+    proposals=proposals.to('cpu')
     gt_class_ids=torch.ones((len(gt_boxes)))
     print('<>'*100)
     print('proposals')
@@ -280,7 +302,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     roi_iou_max = torch.max(overlaps, dim=1)[0]
 
     # 1. Positive ROIs are those with >= 0.5 IoU with a GT box
-    positive_roi_bool = roi_iou_max >= 0.5
+    positive_roi_bool = roi_iou_max >= 0.3
 
     # Subsample ROIs. Aim for 33% positive
     # Positive ROIs
@@ -344,7 +366,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         #if config.GPU_COUNT:
         box_ids = box_ids.to('cpu')
         #masks = torch.tensor(CropAndResizeFunction(config.MASK_SHAPE[0], config.MASK_SHAPE[1], 0)(roi_masks.unsqueeze(1), boxes, box_ids).data)
-        roi_align_mask=RoIAlign(28, 28)
+        roi_align_mask=RoIAlign(14, 14, transform_fpcoor=True)
         masks=roi_align_mask(roi_masks.unsqueeze(1), boxes, box_ids).data
         print('Masks')
         print(masks.shape)
@@ -370,13 +392,14 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         positive_count = 0
 
     # 2. Negative ROIs are those with < 0.5 with every GT box. Skip crowds.
-    negative_roi_bool = roi_iou_max < 0.5
-    no_crowd_bool=no_crowd_bool>0.5
+    negative_roi_bool = roi_iou_max < 0.3
+    no_crowd_bool=no_crowd_bool>0.3
     #print(no_crowd_bool)
     #print(negative_roi_bool)
     #print(negative_roi_bool.is_cuda)
     #print(no_crowd_bool.is_cuda)
-    no_crowd_bool = no_crowd_bool.to(device='cpu')
+    #o_crowd_bool = no_crowd_bool.to(device='cpu')
+    #no_crowd_bool = no_crowd_bool.to(device='cpu')
     negative_roi_bool = negative_roi_bool & no_crowd_bool
     print('negative_roi_bool')
     print(negative_roi_bool)
@@ -772,15 +795,17 @@ def train(hyp, opt, device, tb_writer=None):
                     print(roisz.dtype)
                     print(roi_gt_class_idsz)
                     # Loss
+                    print('boxloss')
                     loss, loss_items = compute_loss(pred, targets.to(device), model)
                     print('loss')
                     print(loss)
+                    print('maskloss')
                     loss_mask=compute_mrcnn_mask_loss(masksz,roi_gt_class_idsz,pred_mask)
                     print(loss_mask)
 
                 else:
-                    print('continue')
-                    break
+                    #print('continue')
+                    #break
                     roisz=torch.tensor([])
                     roi_gt_class_idsz=torch.tensor([])
                     deltasz=torch.tensor([])
