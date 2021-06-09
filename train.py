@@ -13,6 +13,7 @@ from torch.autograd import Function
 import config
 import math
 import os
+import math
 import random
 import time
 from pathlib import Path
@@ -68,6 +69,14 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
 
         # Binary cross entropy
         loss = F.binary_cross_entropy_with_logits(y_pred, y_true)
+        #loss = loss.clamp (min=-10, max=10)
+        print('item')
+        print(loss.item())
+        with torch.no_grad():
+            loss[torch.isnan(loss)] = 10.0
+
+        #if math.isnan(loss.item()):
+        #    loss.item()=10.0
     else:
         loss = Variable(torch.FloatTensor([0]), requires_grad=False)
         if target_class_ids.is_cuda:
@@ -790,7 +799,14 @@ def train(hyp, opt, device, tb_writer=None):
                 # if not torch.isfinite(loss):
                 #     print('WARNING: non-finite loss, ending training ', loss_items)
                 #     return results
+            print('loss   '*100)
+            print('bbox loss')
+            print(loss)
+            print('loss mask')
+            print(loss_mask)
             total_loss=loss+loss_mask
+            print('total loss')
+            print(total_loss)
             # Backward
             scaler.scale(total_loss).backward()
 
