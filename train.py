@@ -51,16 +51,17 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
     """
     print('target class ids')
     print(target_class_ids)
-    print('pred mask')
-    print(pred_masks)
-    print('target mask')
-    print(target_masks)
+    #print('pred mask')
+    #print(pred_masks)
+    #print('target mask')
+    #print(target_masks)
     if target_class_ids.size()[0]:
         # Only positive ROIs contribute to the loss. And only
         # the class specific mask of each ROI.
         positive_ix = torch.nonzero(target_class_ids > 0)[:, 0]
         positive_class_ids = target_class_ids[positive_ix.data].long()
         indices = torch.stack((positive_ix, positive_class_ids), dim=1)
+        pred_masks=torch.squeeze(pred_masks)
 
         print('Indices')
         print(indices)
@@ -69,34 +70,72 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
         print(target_masks.size())
         print(pred_masks.size())
 
+
+        print('target mask '*10)
+        print(target_masks)
+        print('pred mask '*10)
+        print(pred_masks)
+
         print('Lets see '*20)
-        print(target_masks[indices[:,0].data,:,:])
+        #print(target_masks[indices[:,0].data,:,:])
         #sys.exit()
         # Gather the masks (predicted and true) that contribute to loss
-        y_true = target_masks[indices[:,0].data,:,:]
-        y_pred = pred_masks[indices[:,0].data,indices[:,1].data,:,:]
-        print('target_masks')
-        print(target_masks)
+        y_true = target_masks[indices[:,0],...]
+        y_pred = pred_masks[indices[:,0],...]
+        
+        #print('check greater '*100)
+        #print(y_pred>0)
+        #print('see results '*40)
+
+        print('stop  '*50)
+
+        m = torch.nn.Sigmoid()
+        y_pred=m(y_pred)
+        y_true=m(y_true)
+        #print('target_masks')
+        #print(target_masks)
         print('y_true')
         print(y_true.size())
-        print(y_true)
+        #print(torch.unique(y_true,dim=0))
+        #print(y_true)
         print('y_pred')
         print(y_pred.size())
+        #print(torch.unique(y_pred))
         #print(y_pred)
 
-        print('stop 1 '*100)
-        # Binary cross entropy
-        loss = F.binary_cross_entropy_with_logits(y_pred, y_true)
-        print(loss)
-        print('stop 2 '*100)
-        #loss = loss.clamp (min=-10, max=10)
-        print('item')
-        print(loss)
-        with torch.no_grad():
-            loss[torch.isnan(loss)] = 10.0
-        print('item 2')
-        #if math.isnan(loss.item()):
-        #    loss.item()=10.0
+        print('check greater '*100)
+        print(type(y_pred))
+        print(y_pred.dtype) 
+        print('see results '*40)
+
+
+        if y_pred.size()[0]==0:
+            loss = Variable(torch.FloatTensor([0]), requires_grad=False)
+            if target_class_ids.is_cuda:
+                loss = loss.cuda()
+            return loss
+        else:
+            print('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII \n'*100)
+            print('stop 1 '*100)
+            # Binary cross entropy
+            diff=y_true-y_pred
+            print(diff)
+            print('stop 2 '*100)
+            #sys.exit()
+            loss = F.binary_cross_entropy_with_logits(y_pred, y_true)
+            #loss=torch.nn.BCEWithLogitsLoss(y_pred,y_true)
+            print('stop 3 '*100)
+            print(loss)
+            print('stop 4 '*100)
+            #loss = loss.clamp (min=-10, max=10)
+            print('item')
+            print(loss)
+            with torch.no_grad():
+                loss[torch.isnan(loss)] = 10.0
+            print('item 2')
+            print('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII \n'*100)
+            #if math.isnan(loss.item()):
+            #    loss.item()=10.0
     else:
         loss = Variable(torch.FloatTensor([0]), requires_grad=False)
         if target_class_ids.is_cuda:
