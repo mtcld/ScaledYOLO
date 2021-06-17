@@ -33,6 +33,7 @@ def select_device(device='', batch_size=None):
     if cuda:
         c = 1024 ** 2  # bytes to MB
         ng = torch.cuda.device_count()
+        ng=1
         if ng > 1 and batch_size:  # check that batch_size is compatible with device_count
             assert batch_size % ng == 0, 'batch-size %g not multiple of GPU count %g' % (batch_size, ng)
         x = [torch.cuda.get_device_properties(i) for i in range(ng)]
@@ -219,7 +220,15 @@ class ModelEMA:
             for k, v in self.ema.state_dict().items():
                 if v.dtype.is_floating_point:
                     v *= d
+                    print('converting d')
+                    #msd=msd.cuda()
+                    print(v.device)
+                    msd[k]=msd[k].cuda()
+                    print(msd[k].device)
                     v += (1. - d) * msd[k].detach()
+                    #print('data type')
+                    #print(d)
+                    #print(msd)
 
     def update_attr(self, model, include=(), exclude=('process_group', 'reducer')):
         # Update EMA attributes

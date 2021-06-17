@@ -188,13 +188,15 @@ class Detect(nn.Module):
             crops = roi_align(fpn_val, boxes_found, indexlist)
             print('crops shape')
             print(crops.shape)
-            crops=crops.cuda()
+            crops=crops.to('cpu')
             pooled.append(crops)
 
         pooled = torch.cat(pooled, dim=0)
         #pooled=pooled.cuda()
-        self.mask = Mask(24, 7, 1536, 1).to('cuda')
+        #self.mask = Mask(24, 7, 1536, 1).to('cuda')
+        self.mask = Mask(24, 7, 1536, 1)
         mrcnn_mask = self.mask(pooled)
+        mrcnn_mask=mrcnn_mask.cuda()
 
 
         #print('final mask')
@@ -205,7 +207,7 @@ class Detect(nn.Module):
             #fpn_val=fpn_val.unsqueeze(0)
             #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes, indexes)
             #print('pooled feature')
-            #print(pooled_features)
+             #print(pooled_features)
         print('final shape')
         print(x[1].shape)
         print('z new '*300)
@@ -222,7 +224,8 @@ class Detect(nn.Module):
         #print(type(x[0]))
         #print(x[0].size())
 
-
+        print('boxes found')
+        print(boxes_found)
         boxes_found_new=boxes_found.clone()
         boxes_found_new[...,0]=boxes_found_new[...,0]-boxes_found_new[...,2]/2
         boxes_found_new[...,1]=boxes_found_new[...,1]-boxes_found_new[...,3]/2

@@ -61,7 +61,7 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
         positive_ix = torch.nonzero(target_class_ids > 0)[:, 0]
         positive_class_ids = target_class_ids[positive_ix.data].long()
         indices = torch.stack((positive_ix, positive_class_ids), dim=1)
-        pred_masks=torch.squeeze(pred_masks)
+        #pred_masks=torch.squeeze(pred_masks)
 
         print('Indices')
         print(indices)
@@ -80,9 +80,11 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
         #print(target_masks[indices[:,0].data,:,:])
         #sys.exit()
         # Gather the masks (predicted and true) that contribute to loss
+        print('pred mask shape')
+        print(pred_masks.shape)
         y_true = target_masks[indices[:,0],...]
         y_pred = pred_masks[indices[:,0],...]
-        
+        y_pred=torch.squeeze(y_pred,dim=1)
         #print('check greater '*100)
         #print(y_pred>0)
         #print('see results '*40)
@@ -110,7 +112,7 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
 
 
         if y_pred.size()[0]==0:
-            loss = Variable(torch.FloatTensor([0]), requires_grad=False)
+            loss = Variable(torch.FloatTensor([10.0]), requires_grad=True)
             if target_class_ids.is_cuda:
                 loss = loss.cuda()
             return loss
@@ -118,10 +120,13 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
             print('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII \n'*100)
             print('stop 1 '*100)
             # Binary cross entropy
-            diff=y_true-y_pred
-            print(diff)
+            #diff=y_true-y_pred
+            #print(diff)
+            print(y_pred.device)
+            print(y_true.device)
             print('stop 2 '*100)
             #sys.exit()
+            y_true=y_true.cuda()
             loss = F.binary_cross_entropy_with_logits(y_pred, y_true)
             #loss=torch.nn.BCEWithLogitsLoss(y_pred,y_true)
             print('stop 3 '*100)
@@ -137,7 +142,7 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
             #if math.isnan(loss.item()):
             #    loss.item()=10.0
     else:
-        loss = Variable(torch.FloatTensor([0]), requires_grad=False)
+        loss = Variable(torch.FloatTensor([10]), requires_grad=True)
         if target_class_ids.is_cuda:
             loss = loss.cuda()
 
@@ -820,7 +825,7 @@ def train(hyp, opt, device, tb_writer=None):
                 targets_new[...,1]=targets_new[...,1]-targets_new[...,3]/2
                 targets_new[...,2]=targets_new[...,2]+targets_new[...,0]
                 targets_new[...,3]=targets_new[...,3]+targets_new[...,1]
-                
+                pred_mask=pred_mask.cuda()
                 print(targets_new)
 
                 #overcheck=bbox_overlaps(boxes_found,targets_new)
