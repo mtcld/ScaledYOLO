@@ -1,3 +1,4 @@
+import json
 import argparse
 from roi_align.crop_and_resize import CropAndResizeFunction
 import torch
@@ -49,8 +50,8 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
     pred_masks: [batch, proposals, height, width, num_classes] float32 tensor
                 with values from 0 to 1.
     """
-    print('target class ids')
-    print(target_class_ids)
+    #print('target class ids')
+    #print(target_class_ids)
     #print('pred mask')
     #print(pred_masks)
     #print('target mask')
@@ -63,25 +64,25 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
         indices = torch.stack((positive_ix, positive_class_ids), dim=1)
         #pred_masks=torch.squeeze(pred_masks)
 
-        print('Indices')
-        print(indices)
-        print(indices[:,0].data)
-        print('Initial')
-        print(target_masks.size())
-        print(pred_masks.size())
+        #print('Indices')
+        #print(indices)
+        #print(indices[:,0].data)
+        #print('Initial')
+        #print(target_masks.size())
+        #print(pred_masks.size())
 
 
-        print('target mask '*10)
-        print(target_masks)
-        print('pred mask '*10)
-        print(pred_masks)
+        #print('target mask '*10)
+        #print(target_masks)
+        #print('pred mask '*10)
+        #print(pred_masks)
 
-        print('Lets see '*20)
+        #print('Lets see '*20)
         #print(target_masks[indices[:,0].data,:,:])
         #sys.exit()
         # Gather the masks (predicted and true) that contribute to loss
-        print('pred mask shape')
-        print(pred_masks.shape)
+        #print('pred mask shape')
+        #print(pred_masks.shape)
         y_true = target_masks[indices[:,0],...]
         y_pred = pred_masks[indices[:,0],...]
         y_pred=torch.squeeze(y_pred,dim=1)
@@ -89,60 +90,62 @@ def compute_mrcnn_mask_loss(target_masks, target_class_ids, pred_masks):
         #print(y_pred>0)
         #print('see results '*40)
 
-        print('stop  '*50)
+        #print('stop  '*50)
 
         m = torch.nn.Sigmoid()
         y_pred=m(y_pred)
         y_true=m(y_true)
         #print('target_masks')
         #print(target_masks)
-        print('y_true')
-        print(y_true.size())
+        #print('y_true')
+        #print(y_true.size())
         #print(torch.unique(y_true,dim=0))
         #print(y_true)
-        print('y_pred')
-        print(y_pred.size())
+        #print('y_pred')
+        #print(y_pred.size())
         #print(torch.unique(y_pred))
         #print(y_pred)
 
-        print('check greater '*100)
-        print(type(y_pred))
-        print(y_pred.dtype) 
-        print('see results '*40)
+        #print('check greater '*100)
+        #print(type(y_pred))
+        #print(y_pred.dtype) 
+        #print('see results '*40)
 
 
         if y_pred.size()[0]==0:
-            loss = Variable(torch.FloatTensor([10.0]), requires_grad=True)
+            loss = Variable(torch.FloatTensor([1.0]), requires_grad=True)
             if target_class_ids.is_cuda:
                 loss = loss.cuda()
             return loss
         else:
-            print('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII \n'*100)
-            print('stop 1 '*100)
+            #print('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII \n'*100)
+            #print('stop 1 '*100)
             # Binary cross entropy
             #diff=y_true-y_pred
             #print(diff)
+            print('Device')
             print(y_pred.device)
             print(y_true.device)
-            print('stop 2 '*100)
+            #print('stop 2 '*100)
             #sys.exit()
             y_true=y_true.cuda()
+            y_pred=y_pred.cuda()
             loss = F.binary_cross_entropy_with_logits(y_pred, y_true)
             #loss=torch.nn.BCEWithLogitsLoss(y_pred,y_true)
-            print('stop 3 '*100)
-            print(loss)
-            print('stop 4 '*100)
+            #print('stop 3 '*100)
+            #print(loss)
+            #print('stop 4 '*100)
             #loss = loss.clamp (min=-10, max=10)
-            print('item')
-            print(loss)
+            #print('item')
+            #print(loss)
             with torch.no_grad():
-                loss[torch.isnan(loss)] = 10.0
-            print('item 2')
-            print('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII \n'*100)
+                loss[torch.isnan(loss)] = 1.0
+            #print('item 2')
+            #print('IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII \n'*100)
             #if math.isnan(loss.item()):
             #    loss.item()=10.0
     else:
-        loss = Variable(torch.FloatTensor([10]), requires_grad=True)
+        loss = Variable(torch.FloatTensor([1]), requires_grad=True)
         if target_class_ids.is_cuda:
             loss = loss.cuda()
 
@@ -262,9 +265,9 @@ def bbox_overlaps(boxes1, boxes2):
     return overlaps
 
 def detection_target_layer(proposals, gt_boxes, gt_masks, config):
-    print('HELLO '*100)
-    print(proposals)
-    print(gt_boxes)
+    #print('HELLO '*100)
+    #print(proposals)
+    #print(gt_boxes)
     """Subsamples proposals and generates target box refinment, class_ids,
     and masks for each.
     Inputs:
@@ -295,26 +298,26 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     gt_boxes=gt_boxes.to('cpu')
     proposals=proposals.to('cpu')
     gt_class_ids=torch.ones((len(gt_boxes)))
-    print('<>'*100)
-    print('proposals')
-    print(proposals.shape)
-    print('gt_masks')
-    print(gt_masks.size())
-    print(gt_masks)
-    print('gt_boxes')
-    print(gt_boxes.shape)
-    print(gt_boxes)
-    print('gt_class')
-    print(gt_class_ids.shape)
-    print(gt_class_ids)
+    #print('<>'*100)
+    #print('proposals')
+    #print(proposals.shape)
+    #print('gt_masks')
+    #print(gt_masks.size())
+    #print(gt_masks)
+    #print('gt_boxes')
+    #print(gt_boxes.shape)
+    #print(gt_boxes)
+    #print('gt_class')
+    #print(gt_class_ids.shape)
+    #print(gt_class_ids)
     # Handle COCO crowds
     # A crowd box in COCO is a bounding box around several instances. Exclude
     # them from training. A crowd box is given a negative class ID.
-    print('Zzz'*30)
+    #print('Zzz'*30)
     id_non_zero=torch.nonzero(gt_class_ids < 0).size()[0]
-    print(id_non_zero)
+    #print(id_non_zero)
     if id_non_zero !=0 :
-        print('Condition Satisfied')
+        #print('Condition Satisfied')
         crowd_ix = torch.nonzero(gt_class_ids < 0)[:, 0]
         non_crowd_ix = torch.nonzero(gt_class_ids > 0)[:, 0]
         #print('non_crowd_ix.data')
@@ -336,12 +339,12 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
 
     # Compute overlaps matrix [proposals, gt_boxes]
     overlaps = bbox_overlaps(proposals, gt_boxes)
-    print('propsoal')
-    print(proposals)
-    print('gt_boxes')
-    print(gt_boxes)
-    print('overlaps')
-    print(overlaps)
+    #print('propsoal')
+    #print(proposals)
+    #print('gt_boxes')
+    #print(gt_boxes)
+    #print('overlaps')
+    #print(overlaps)
     # Determine postive and negative ROIs
     roi_iou_max = torch.max(overlaps, dim=1)[0]
 
@@ -352,8 +355,8 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     # Positive ROIs
     if torch.nonzero(positive_roi_bool).size()[0]!=0:
         positive_indices = torch.nonzero(positive_roi_bool)[:, 0]
-        print('positive indieces')
-        print(positive_indices)
+        #print('positive indieces')
+        #print(positive_indices)
         positive_count = int(config.TRAIN_ROIS_PER_IMAGE *
                              config.ROI_POSITIVE_RATIO)
         rand_idx = torch.randperm(positive_indices.size()[0])
@@ -412,12 +415,12 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         #masks = torch.tensor(CropAndResizeFunction(config.MASK_SHAPE[0], config.MASK_SHAPE[1], 0)(roi_masks.unsqueeze(1), boxes, box_ids).data)
         roi_align_mask=RoIAlign(14, 14, transform_fpcoor=True)
         masks=roi_align_mask(roi_masks.unsqueeze(1), boxes, box_ids).data
-        print('Masks')
-        print(masks.shape)
-        print(masks)
+        #print('Masks')
+        #print(masks.shape)
+        #print(masks)
         masks = masks.squeeze(1)
-        print(masks.shape)
-        print('Running \n'*300)
+        #print(masks.shape)
+        #print('Running \n'*300)
         #sys.exit()
         #print('Masks')
         #print(masks.size())
@@ -445,15 +448,15 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     #o_crowd_bool = no_crowd_bool.to(device='cpu')
     #no_crowd_bool = no_crowd_bool.to(device='cpu')
     negative_roi_bool = negative_roi_bool & no_crowd_bool
-    print('negative_roi_bool')
-    print(negative_roi_bool)
-    print(torch.nonzero(negative_roi_bool).size()[0])
+    #print('negative_roi_bool')
+    #print(negative_roi_bool)
+    #print(torch.nonzero(negative_roi_bool).size()[0])
     #sys.exit()
     # Negative ROIs. Add enough to maintain positive:negative ratio.
     if torch.nonzero(negative_roi_bool).size()[0]!=0 :
-        print('condition a')
+        #print('condition a')
         negative_indices = torch.nonzero(negative_roi_bool)[:, 0]
-        print(negative_indices)
+        #print(negative_indices)
         r = 1.0 / config.ROI_POSITIVE_RATIO
         if positive_count>0:
             negative_count = int(r * positive_count - positive_count)
@@ -466,8 +469,8 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         negative_indices = negative_indices[rand_idx]
         negative_count = negative_indices.size()[0]
         negative_rois = proposals[negative_indices.data, :]
-        print('negative indices')
-        print(negative_indices)
+        #print('negative indices')
+        #print(negative_indices)
     else:
         negative_count = 0
 
@@ -518,14 +521,14 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
             roi_gt_class_ids = roi_gt_class_ids.cuda()
             deltas = deltas.cuda()
             masks = masks.cuda()
-    print('masks')
-    print(masks.size())
-    print('Gt_masks')
-    print(gt_masks.size())
-    print('rois')
-    print(rois.size())
-    print('positive and negative counts')
-    print(positive_count,negative_count)
+    #print('masks')
+    #print(masks.size())
+    #print('Gt_masks')
+    #print(gt_masks.size())
+    #print('rois')
+    #print(rois.size())
+    #print('positive and negative counts')
+    #print(positive_count,negative_count)
     #print('roi_gt_box_assignment.data')
     # print(roi_gt_box_assignment.data)
     #    roi_masks = gt_masks[roi_gt_box_assignment.data,:,:]
@@ -538,8 +541,12 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
 
 def train(hyp, opt, device, tb_writer=None):
     print(f'Hyperparameters {hyp}')
-    print(device)
+    #print(device)
     #sys.exit()
+    loss_data={}
+    loss_data['box']=[]
+    loss_data['mask']=[]
+    loss_data['total']=[]
     log_dir = Path(tb_writer.log_dir) if tb_writer else Path(opt.logdir) / 'evolve'  # logging directory
     wdir = str(log_dir / 'weights') + os.sep  # weights directory
     os.makedirs(wdir, exist_ok=True)
@@ -571,14 +578,14 @@ def train(hyp, opt, device, tb_writer=None):
     # Model
     pretrained = weights.endswith('.pt')
     if pretrained:
-        print('Pretrained')
+        #print('Pretrained')
         #sys.exit()
         with torch_distributed_zero_first(rank):
             attempt_download(weights)  # download if not found locally
-        print('device 2')
-        print(device)
+        #print('device 2')
+        #print(device)
         ckpt = torch.load(weights, map_location=device)  # load checkpoint
-        print(opt.cfg)
+        #print(opt.cfg)
         #sys.exit()
         model = Model(opt.cfg or ckpt['model'].yaml, ch=3, nc=nc).to(device)  # create
         model=model.cuda()
@@ -593,11 +600,11 @@ def train(hyp, opt, device, tb_writer=None):
         #sys.exit()
         print('Transferred %g/%g items from %s' % (len(state_dict), len(model.state_dict()), weights))  # report
     else:
-        print('Not Pretrained')
+        #print('Not Pretrained')
         #sys.exit()
 
-        print('device 2')
-        print(device)
+        #print('device 2')
+        #print(device)
 
         model = Model(opt.cfg, ch=3, nc=nc).to(device)# create
         #model = model.to(memory_format=torch.channels_last)  # create
@@ -679,10 +686,10 @@ def train(hyp, opt, device, tb_writer=None):
     dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, opt, hyp=hyp, augment=False,
                                             cache=opt.cache_images, rect=opt.rect, local_rank=rank,
                                             world_size=opt.world_size)
-    print('D-'*100)
-    print(dataset)
-    print(type(dataset.labels))
-    print(dataset.labels[0])
+    #print('D-'*100)
+    #print(dataset)
+    #print(type(dataset.labels))
+    #print(dataset.labels[0])
     #print(dataset.n)
     mlc = np.concatenate(dataset.labels, 0)[:, 0].max()  # max label class
     nb = len(dataloader)  # number of batches
@@ -763,17 +770,19 @@ def train(hyp, opt, device, tb_writer=None):
             pbar = tqdm(pbar, total=nb)  # progress bar
         optimizer.zero_grad()
         for i, (imgs, targets, segms,paths, _) in pbar:  # batch -------------------------------------------------------------
+            print('Number')
+            print(i)
             print('paths')
             print(paths)
-            print('-'*100)
-            print(targets)
-            print('Segms')
-            print(segms.shape)
-            print(segms)
+            #print('-'*100)
+            #print(targets)
+            #print('Segms')
+            #print(segms.shape)
+            #print(segms)
 
-            print('targets')
-            print(targets.shape)
-            print(targets)
+            #print('targets')
+            #print(targets.shape)
+            #print(targets)
             
             if len(targets)==0:
                 continue
@@ -806,18 +815,18 @@ def train(hyp, opt, device, tb_writer=None):
             with amp.autocast(enabled=cuda):
                 # Forward                
                 pred,boxes_found,pred_mask = model(imgs)
-                print('Pred')
-                print(type(pred))
-                print(len(pred))
-                print(type(pred[0]))
-                print(pred[0].shape)
+                #print('Pred')
+                #print(type(pred))
+                #print(len(pred))
+                #print(type(pred[0]))
+                #print(pred[0].shape)
                 #print(pred)
-                print('target')
-                print(targets)
+                #print('target')
+                #print(targets)
                 
-                print('bf\n'*20 )
-                print(boxes_found)
-                print(boxes_found.shape) 
+                #print('bf\n'*20 )
+                #print(boxes_found)
+                #print(boxes_found.shape) 
 
                 targets_new=targets.clone()
                 targets_new=targets_new[...,2:6]
@@ -826,26 +835,26 @@ def train(hyp, opt, device, tb_writer=None):
                 targets_new[...,2]=targets_new[...,2]+targets_new[...,0]
                 targets_new[...,3]=targets_new[...,3]+targets_new[...,1]
                 pred_mask=pred_mask.cuda()
-                print(targets_new)
+                #print(targets_new)
 
                 #overcheck=bbox_overlaps(boxes_found,targets_new)
-                print('Oo'*100)
+                #print('Oo'*100)
 
                 if boxes_found.shape[0] != 0:
                     roisz, roi_gt_class_idsz, deltasz, masksz=detection_target_layer(boxes_found,  targets_new, segms, config)
-                    print('Shapes')
-                    print(masksz.shape)
-                    print(roisz.shape)
-                    print(roisz.dtype)
-                    print(roi_gt_class_idsz)
+                    #print('Shapes')
+                    #print(masksz.shape)
+                    #print(roisz.shape)
+                    #print(roisz.dtype)
+                    #print(roi_gt_class_idsz)
                     # Loss
-                    print('boxloss')
+                    #print('boxloss')
                     loss, loss_items = compute_loss(pred, targets.to(device), model)
-                    print('loss')
-                    print(loss)
-                    print('maskloss')
+                    #print('loss')
+                    #print(loss)
+                    #print('maskloss')
                     loss_mask=compute_mrcnn_mask_loss(masksz,roi_gt_class_idsz,pred_mask)
-                    print(loss_mask)
+                    #print(loss_mask)
 
                 else:
                     #print('continue')
@@ -855,25 +864,31 @@ def train(hyp, opt, device, tb_writer=None):
                     deltasz=torch.tensor([])
                     masksz=torch.tensor([])
                     # Loss
-                    loss, loss_items = torch.tensor([10.5],requires_grad=True).to(device), torch.tensor([10.5],requires_grad=True).to(device)
-                    print('loss')
-                    print(loss)
+                    loss, loss_items = torch.tensor([1.0],requires_grad=True).to(device), torch.tensor([1.0],requires_grad=True).to(device)
+                    #print('loss')
+                    #print(loss)
                     #loss=loss.long()
                     #loss_items=loss_items.long()
                     #print('loss_mask')
-                    loss_mask=torch.tensor([10.5],requires_grad=True).to(device)
-                    print(loss_mask)
+                    loss_mask=torch.tensor([1.0],requires_grad=True).to(device)
+                    #print(loss_mask)
+                
                 if rank != -1:
                     loss *= opt.world_size  # gradient averaged between devices in DDP mode
                 # if not torch.isfinite(loss):
                 #     print('WARNING: non-finite loss, ending training ', loss_items)
                 #     return results
-            print('loss   '*100)
+            #print('loss   '*100)
             print('bbox loss')
-            print(loss)
+            print(loss.item())
             print('loss mask')
             print(loss_mask)
             total_loss=loss+loss_mask
+            loss_data['box'].append(loss.item())
+            loss_data['mask'].append(loss_mask.item())
+            loss_data['total'].append(total_loss.item())
+            with open('loss_data.json', 'w') as outfile:
+                json.dump(loss_data,outfile,indent=4,ensure_ascii = False)
             print('total loss')
             print(total_loss)
             # Backward
@@ -907,7 +922,7 @@ def train(hyp, opt, device, tb_writer=None):
 
         # Scheduler
         scheduler.step()
-        '''
+        
         # DDP process 0 or single-GPU
         if rank in [-1, 0]:
             # mAP
@@ -962,7 +977,7 @@ def train(hyp, opt, device, tb_writer=None):
                 del ckpt
         # end epoch ----------------------------------------------------------------------------------------------------
     # end training
-        '''
+
     if rank in [-1, 0]:
         # Strip optimizers
         n = ('_' if len(opt.name) and not opt.name.isnumeric() else '') + opt.name

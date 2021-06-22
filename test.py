@@ -4,7 +4,7 @@ import json
 import os
 import shutil
 from pathlib import Path
-
+import sys
 import numpy as np
 import torch
 import yaml
@@ -17,6 +17,7 @@ from utils.general import (
     scale_coords, xyxy2xywh, clip_coords, plot_images, xywh2xyxy, box_iou, output_to_target, ap_per_class)
 from utils.torch_utils import select_device, time_synchronized
 
+#sys.exit()
 
 def test(data,
          weights=None,
@@ -96,10 +97,15 @@ def test(data,
         with torch.no_grad():
             # Run model
             t = time_synchronized()
-            inf_out, train_out = model(img, augment=augment)  # inference and training outputs
-            #inf_out, train_out = model(img.to(memory_format=torch.channels_last), augment=augment)  # inference and training outputs
+            main_out,boxes_found,segm = model(img, augment=augment)  # inference and training outputs
+            inf_out, train_out = main_out
             print('Inf out')
             print(inf_out.size())
+            print(boxes_found.shape)
+            print(segm.shape)
+            print(boxes_found)
+            print(segm)
+            #sys.exit()
             print('Train out')
             print(len(train_out))
             print(train_out[0].size())
@@ -114,6 +120,10 @@ def test(data,
             # Run NMS
             t = time_synchronized()
             output = non_max_suppression(inf_out, conf_thres=conf_thres, iou_thres=iou_thres, merge=merge)
+            print('Shapessssssssssssssssssssssssssssssss')
+            print(inf_out.shape)
+            print(len(output))
+            print(output[0].shape)
             t1 += time_synchronized() - t
 
         # Statistics per image
@@ -149,12 +159,22 @@ def test(data,
                 for zz1 in range(len(d1['images'])):
                     fn=d1['images'][zz1]['file_name']
                     fn=fn[:fn.rfind('.')]
-                    img_id_dict[fn]=d1['images'][zz1]['id']
-                # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
+                    
+                    #continue
+                    #print(fn)
+                    try:
+                        img_id_dict[fn]=d1['images'][zz1]['id']
+                    except:
+                        print('Not found')
+                #print("Image Id")
+                #print(img_id_dict)
+                # [{"	iimage_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = Path(paths[si]).stem
                 #print(len(img_id_dict.keys()))
-                image_id=img_id_dict[image_id]
-                
+                try:
+                    image_id=img_id_dict[image_id]
+                except:
+                    continue
                 box = pred[:, :4].clone()  # xyxy
                 scale_coords(img[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
                 box = xyxy2xywh(box)  # xywh
@@ -267,7 +287,7 @@ def test(data,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='test.py')
     parser.add_argument('--weights', nargs='+', type=str, default='yolov4-p5.pt', help='model.pt path(s)')
-    parser.add_argument('--data', type=str, default='data/coco128.yaml', help='*.data path')
+    parser.add_argument('--data', type=str, default='data/coco.yaml', help='*.data path')
     parser.add_argument('--batch-size', type=int, default=32, help='size of each image batch')
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='object confidence threshold')

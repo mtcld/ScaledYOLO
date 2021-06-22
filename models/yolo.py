@@ -78,18 +78,18 @@ class Mask(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        print('check1')
+        #print('check1')
         x = self.conv1(self.padding(x))
         x = self.bn1(x)
         x = self.relu(x)
-        print('check2')
+        #print('check2')
         x = self.conv2(self.padding(x))
         x = self.bn2(x)
         x = self.relu(x)
         x = self.conv3(self.padding(x))
         x = self.bn3(x)
         x = self.relu(x)
-        print('check3')
+        #print('check3')
         x = self.conv4(self.padding(x))
         x = self.bn4(x)
         x = self.relu(x)
@@ -97,7 +97,7 @@ class Mask(nn.Module):
         x = self.relu(x)
         x = self.conv5(x)
         x = self.sigmoid(x)
-        print('check4')
+        #print('check4')
 
         return x
 
@@ -133,7 +133,7 @@ class Detect(nn.Module):
             #print('new shape')
             #print(x[i].shape)
 
-            if  self.training:  # inference
+            if  True: #self.training:  # inference
                 self.stride=torch.tensor([8,16,32,64,128])
                 #print('grid')
                 #print(self.grid)
@@ -147,47 +147,48 @@ class Detect(nn.Module):
                 #print(y)
                 boxes_found=y.view(bs, -1, self.no)
                 z_new.append(boxes_found)
-                #y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
-                #y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
-                #z.append(y.view(bs, -1, self.no))
-            print(boxes_found.shape)
-            print(bs)
+                y2=y.clone()
+                y2[..., 0:2] = (y2[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
+                y2[..., 2:4] = (y2[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                z.append(y2.view(bs, -1, self.no))
+            #print(boxes_found.shape)
+            #print(bs)
             boxes_found=boxes_found.view(bs*boxes_found.shape[1],6)
-            print(boxes_found.shape)
-            print('CHECk 5 '*20)
-            print(boxes_found)
+            #print(boxes_found.shape)
+            #print('CHECk 5 '*20)
+            #print(boxes_found)
             boxes_found=boxes_found[torch.where(boxes_found[...,4]>0.3)]
             boxes_found=boxes_found[...,0:4]
             indexlist=[]
             for bb in range(bs):
-                print('bs')
-                print(bb)
+                #print('bs')
+                #print(bb)
                 indexlist=indexlist+[bb]*boxes_found.shape[0]
             indexlist=torch.tensor(indexlist, dtype=torch.int)
             indexlist=indexlist.cuda()
             boxes_found=boxes_found.cuda()
             fpn_val=fpn_val.cuda()
-            print('latest '*20)
-            print(fpn_val.shape)
-            print(boxes_found.shape)
-            print(indexlist.shape)
-            print(fpn_val.dtype)
-            print(boxes_found.dtype)
-            print(indexlist.dtype)
+            #print('latest '*20)
+            #print(fpn_val.shape)
+            #print(boxes_found.shape)
+            #print(indexlist.shape)
+            #print(fpn_val.dtype)
+            #print(boxes_found.dtype)
+            #print(indexlist.dtype)
             fpn_val=torch.tensor(fpn_val,dtype=torch.float32)
             boxes_found=torch.tensor(boxes_found,dtype=torch.float32)
             #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes_found, indexlist)
             roi_align = RoIAlign(7,7, transform_fpcoor=True)
 
             # make crops:
-            print('ROI CHECK '*50)
-            print(fpn_val)
-            print(boxes_found)
-            print(indexlist)
-            print('ROI CHECK END '*50)
+            #print('ROI CHECK '*50)
+            #print(fpn_val)
+            #print(boxes_found)
+            #print(indexlist)
+            #print('ROI CHECK END '*50)
             crops = roi_align(fpn_val, boxes_found, indexlist)
-            print('crops shape')
-            print(crops.shape)
+            #print('crops shape')
+            #print(crops.shape)
             crops=crops.to('cpu')
             pooled.append(crops)
 
@@ -208,12 +209,12 @@ class Detect(nn.Module):
             #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes, indexes)
             #print('pooled feature')
              #print(pooled_features)
-        print('final shape')
-        print(x[1].shape)
-        print('z new '*300)
-        print(z_new[0].shape)
-        print(z_new)
-        print('z new '*300)
+        #print('final shape')
+        #print(x[1].shape)
+        #print('z new '*300)
+        #print(z_new[0].shape)
+        #print(z_new)
+        #print('z new '*300)
 
         #print(type(z))
         #print(len(z))
@@ -224,8 +225,8 @@ class Detect(nn.Module):
         #print(type(x[0]))
         #print(x[0].size())
 
-        print('boxes found')
-        print(boxes_found)
+        #print('boxes found')
+        #print(boxes_found)
         boxes_found_new=boxes_found.clone()
         boxes_found_new[...,0]=boxes_found_new[...,0]-boxes_found_new[...,2]/2
         boxes_found_new[...,1]=boxes_found_new[...,1]-boxes_found_new[...,3]/2
@@ -266,9 +267,9 @@ class Model(nn.Module):
             m.anchors /= m.stride.view(-1, 1, 1)
             check_anchor_order(m)
             self.stride = m.stride
-            print('Self Stride '*30)
-            print(self.stride)
-            print(self.stride.dtype)
+            #print('Self Stride '*30)
+            #print(self.stride)
+            #print(self.stride.dtype)
             self._initialize_biases()  # only run once
             # print('Strides: %s' % m.stride.tolist())
 

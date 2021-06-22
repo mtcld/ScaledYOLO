@@ -215,16 +215,19 @@ class ModelEMA:
         with torch.no_grad():
             self.updates += 1
             d = self.decay(self.updates)
-
+	
             msd = model.module.state_dict() if is_parallel(model) else model.state_dict()  # model state_dict
             for k, v in self.ema.state_dict().items():
                 if v.dtype.is_floating_point:
                     v *= d
+                    v=v.cuda()
                     print('converting d')
                     #msd=msd.cuda()
                     print(v.device)
+                    print(msd[k].device)
                     msd[k]=msd[k].cuda()
                     print(msd[k].device)
+                    #d=d.cuda()
                     v += (1. - d) * msd[k].detach()
                     #print('data type')
                     #print(d)

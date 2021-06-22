@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from copy import copy
 from pathlib import Path
 from sys import platform
-
+import sys
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
@@ -785,6 +785,7 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
     Returns:
          detections with shape: nx6 (x1, y1, x2, y2, conf, cls)
     """
+    #sys.exit()
     if prediction.dtype is torch.float16:
         prediction = prediction.float()  # to FP32
 
@@ -855,6 +856,9 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
             except:  # possible CUDA error https://github.com/ultralytics/yolov3/issues/1139
                 print(x, i, x.shape, i.shape)
                 pass
+        print('NON MAXIM '*100)
+        print(xi)
+        print(x[i])
 
         output[xi] = x[i]
         if (time.time() - t) > time_limit:
@@ -1130,7 +1134,7 @@ def coco_single_class_labels(path='../coco/labels/train2014/', label_class=43):
             shutil.copyfile(src=img_file, dst='new/images/' + Path(file).name.replace('txt', 'jpg'))  # copy images
 
 
-def kmean_anchors(path='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True):
+def kmean_anchors(path='./data/coco.yaml', n=9, img_size=640, thr=4.0, gen=1000, verbose=True):
     """ Creates kmeans-evolved anchors from training dataset
 
         Arguments:
