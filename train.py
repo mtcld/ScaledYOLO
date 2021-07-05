@@ -298,14 +298,14 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     gt_boxes=gt_boxes.to('cpu')
     proposals=proposals.to('cpu')
     gt_class_ids=torch.ones((len(gt_boxes)))
-    #print('<>'*100)
-    #print('proposals')
-    #print(proposals.shape)
-    #print('gt_masks')
-    #print(gt_masks.size())
+    print('<>'*100)
+    print('proposals')
+    print(proposals.shape)
+    print('gt_masks')
+    print(gt_masks.size())
     #print(gt_masks)
-    #print('gt_boxes')
-    #print(gt_boxes.shape)
+    print('gt_boxes')
+    print(gt_boxes.shape)
     #print(gt_boxes)
     #print('gt_class')
     #print(gt_class_ids.shape)
@@ -461,6 +461,7 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
         if positive_count>0:
             negative_count = int(r * positive_count - positive_count)
         else:
+            negative_indices = torch.nonzero(negative_roi_bool)[:, 0][:5]
             negative_count=len(negative_indices)
         rand_idx = torch.randperm(negative_indices.size()[0])
         rand_idx = rand_idx[:negative_count]
@@ -525,15 +526,15 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     #print(masks.size())
     #print('Gt_masks')
     #print(gt_masks.size())
-    #print('rois')
-    #print(rois.size())
-    #print('positive and negative counts')
-    #print(positive_count,negative_count)
+    print('rois')
+    print(rois.size())
+    print('positive and negative counts')
+    print(positive_count,negative_count)
     #print('roi_gt_box_assignment.data')
     # print(roi_gt_box_assignment.data)
     #    roi_masks = gt_masks[roi_gt_box_assignment.data,:,:]
-    #print('Roi_masks')
-    #print(roi_masks.size())
+    print('Roi_masks')
+    print(masks.size())
     #sys.exit()
     return rois, roi_gt_class_ids, deltas, masks
 
@@ -883,6 +884,7 @@ def train(hyp, opt, device, tb_writer=None):
             print(loss.item())
             print('loss mask')
             print(loss_mask)
+            loss_mask=0.1*loss_mask
             total_loss=loss+loss_mask
             loss_data['box'].append(loss.item())
             loss_data['mask'].append(loss_mask.item())

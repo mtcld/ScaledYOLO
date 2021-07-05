@@ -856,9 +856,9 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
             except:  # possible CUDA error https://github.com/ultralytics/yolov3/issues/1139
                 print(x, i, x.shape, i.shape)
                 pass
-        print('NON MAXIM '*100)
-        print(xi)
-        print(x[i])
+        #print('NON MAXIM '*100)
+        #print(xi)
+        #print(x[i])
 
         output[xi] = x[i]
         if (time.time() - t) > time_limit:

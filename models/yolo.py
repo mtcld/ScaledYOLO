@@ -125,6 +125,8 @@ class Detect(nn.Module):
         z_new=[]
         self.training |= self.export
         pooled=[]
+        boxes_found_main=torch.empty((0,4))
+        boxes_found_main=boxes_found_main.cuda()
         for i in range(self.nl):
             x[i] = self.m[i](x[i])  # conv  12,24,48,96,192
             fpn_val=x[i].clone()
@@ -148,8 +150,8 @@ class Detect(nn.Module):
                 boxes_found=y.view(bs, -1, self.no)
                 z_new.append(boxes_found)
                 y2=y.clone()
-                y2[..., 0:2] = (y2[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
-                y2[..., 2:4] = (y2[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                #y2[..., 0:2] = (y2[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
+                #y2[..., 2:4] = (y2[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                 z.append(y2.view(bs, -1, self.no))
             #print(boxes_found.shape)
             #print(bs)
@@ -157,8 +159,9 @@ class Detect(nn.Module):
             #print(boxes_found.shape)
             #print('CHECk 5 '*20)
             #print(boxes_found)
-            boxes_found=boxes_found[torch.where(boxes_found[...,4]>0.3)]
+            boxes_found=boxes_found[torch.where(boxes_found[...,4]>0.4)]
             boxes_found=boxes_found[...,0:4]
+            
             indexlist=[]
             for bb in range(bs):
                 #print('bs')
@@ -177,6 +180,10 @@ class Detect(nn.Module):
             #print(indexlist.dtype)
             fpn_val=torch.tensor(fpn_val,dtype=torch.float32)
             boxes_found=torch.tensor(boxes_found,dtype=torch.float32)
+            boxes_found[...,0]=boxes_found[...,0]-boxes_found[...,2]/2
+            boxes_found[...,1]=boxes_found[...,1]-boxes_found[...,3]/2
+            boxes_found[...,2]=boxes_found[...,2]+boxes_found[...,0]
+            boxes_found[...,3]=boxes_found[...,2]+boxes_found[...,1]
             #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes_found, indexlist)
             roi_align = RoIAlign(7,7, transform_fpcoor=True)
 
@@ -191,7 +198,12 @@ class Detect(nn.Module):
             #print(crops.shape)
             crops=crops.to('cpu')
             pooled.append(crops)
-
+            print('boxes found shape')
+            print(i)
+            print(boxes_found.shape)
+            boxes_found_main=torch.cat((boxes_found_main,boxes_found))
+        print('boxes found main shape')
+        print(boxes_found_main.shape)
         pooled = torch.cat(pooled, dim=0)
         #pooled=pooled.cuda()
         #self.mask = Mask(24, 7, 1536, 1).to('cuda')
@@ -227,13 +239,13 @@ class Detect(nn.Module):
 
         #print('boxes found')
         #print(boxes_found)
-        boxes_found_new=boxes_found.clone()
-        boxes_found_new[...,0]=boxes_found_new[...,0]-boxes_found_new[...,2]/2
-        boxes_found_new[...,1]=boxes_found_new[...,1]-boxes_found_new[...,3]/2
-        boxes_found_new[...,2]=boxes_found_new[...,2]+boxes_found_new[...,0]
-        boxes_found_new[...,3]=boxes_found_new[...,2]+boxes_found_new[...,1]
+        #boxes_found_new=boxes_found.clone()
+        #boxes_found_new[...,0]=boxes_found_new[...,0]-boxes_found_new[...,2]/2
+        #boxes_found_new[...,1]=boxes_found_new[...,1]-boxes_found_new[...,3]/2
+        #boxes_found_new[...,2]=boxes_found_new[...,2]+boxes_found_new[...,0]
+        #boxes_found_new[...,3]=boxes_found_new[...,2]+boxes_found_new[...,1]
 
-        return (x if self.training else (torch.cat(z, 1), x), boxes_found_new,mrcnn_mask )
+        return (x if self.training else (torch.cat(z, 1), x), boxes_found_main,mrcnn_mask )
 
     @staticmethod
     def _make_grid(nx=20, ny=20):

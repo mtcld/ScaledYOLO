@@ -221,12 +221,12 @@ class ModelEMA:
                 if v.dtype.is_floating_point:
                     v *= d
                     v=v.cuda()
-                    print('converting d')
+                    #print('converting d')
                     #msd=msd.cuda()
-                    print(v.device)
-                    print(msd[k].device)
+                    #print(v.device)
+                    #print(msd[k].device)
                     msd[k]=msd[k].cuda()
-                    print(msd[k].device)
+                    #print(msd[k].device)
                     #d=d.cuda()
                     v += (1. - d) * msd[k].detach()
                     #print('data type')

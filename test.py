@@ -99,18 +99,20 @@ def test(data,
             t = time_synchronized()
             main_out,boxes_found,segm = model(img, augment=augment)  # inference and training outputs
             inf_out, train_out = main_out
-            print('Inf out')
-            print(inf_out.size())
-            print(boxes_found.shape)
-            print(segm.shape)
+            print('boxes')
             print(boxes_found)
-            print(segm)
+            #print('Inf out')
+            #print(inf_out.size())
+            #print(boxes_found.shape)
+            #print(segm.shape)
+            #print(boxes_found)
+            #print(segm)
             #sys.exit()
-            print('Train out')
-            print(len(train_out))
-            print(train_out[0].size())
-            print(train_out[1].size())
-            print(train_out[2].size())
+            #print('Train out')
+            #print(len(train_out))
+            #print(train_out[0].size())
+            #print(train_out[1].size())
+            #print(train_out[2].size())
             t0 += time_synchronized() - t
 
             # Compute loss
@@ -120,15 +122,21 @@ def test(data,
             # Run NMS
             t = time_synchronized()
             output = non_max_suppression(inf_out, conf_thres=conf_thres, iou_thres=iou_thres, merge=merge)
-            print('Shapessssssssssssssssssssssssssssssss')
-            print(inf_out.shape)
-            print(len(output))
-            print(output[0].shape)
+            print('output')
+            print(output)
+            #print('Shapessssssssssssssssssssssssssssssss')
+            #print(inf_out.shape)
+            #print(len(output))
+            #print(output[0].shape)
             t1 += time_synchronized() - t
 
         # Statistics per image
         for si, pred in enumerate(output):
+            print('labels and target')
+            #print(labels)
+            print(targets)
             labels = targets[targets[:, 0] == si, 1:]
+            print(labels)
             nl = len(labels)
             tcls = labels[:, 0].tolist() if nl else []  # target class
             seen += 1
@@ -153,37 +161,52 @@ def test(data,
 
             # Append to pycocotools JSON dictionary
             if save_json:
-                with open('/mmdetection/data/crack_latest/annotations/crack_test.json') as f:
+                with open('/mmdetection/data/total-missing/annotations/missing_valid.json') as f:
                     d1=json.load(f)
                 img_id_dict={}
                 for zz1 in range(len(d1['images'])):
                     fn=d1['images'][zz1]['file_name']
                     fn=fn[:fn.rfind('.')]
-                    
+                    img_id_dict[fn]=d1['images'][zz1]['id']
                     #continue
                     #print(fn)
-                    try:
-                        img_id_dict[fn]=d1['images'][zz1]['id']
-                    except:
-                        print('Not found')
+                    #try:
+                    #    img_id_dict[fn]=d1['images'][zz1]['id'].stem
+                    #except:
+                    #    print('Not found')
                 #print("Image Id")
                 #print(img_id_dict)
                 # [{"	iimage_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = Path(paths[si]).stem
-                #print(len(img_id_dict.keys()))
-                try:
-                    image_id=img_id_dict[image_id]
-                except:
-                    continue
+                print('check')
+                print(image_id)
+                print(len(img_id_dict.keys()))
+                #try:
+                #    image_id=img_id_dict[image_id]
+                #except:
+                #    continue
+                image_id=img_id_dict[image_id]
                 box = pred[:, :4].clone()  # xyxy
-                scale_coords(img[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
-                box = xyxy2xywh(box)  # xywh
-                box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
+                print('bbb')
+                print(box)
+                #scale_coords(img[si].shape[1:], box, shapes[si][0], shapes[si][1])  # to original shape
+                #box = xyxy2xywh(box)  # xywh
+                #box[:, :2] -= box[:, 2:] / 2  # xy center to top-left corner
+                #print(box)
+                #print(p)
+                #if round(p[4], 5) < 0.6:
+                #    continue
                 for p, b in zip(pred.tolist(), box.tolist()):
+                    if round(p[4], 5) < 0.6:
+                        continue
                     jdict.append({'image_id': image_id,
                                   'category_id': 0,
                                   'bbox': [round(x, 3) for x in b],
                                   'score': round(p[4], 5)})
+                    #print('jdict')
+                    #print(jdict)
+                    #sys.exit()
+
 
             # Assign all predictions as incorrect
             correct = torch.zeros(pred.shape[0], niou, dtype=torch.bool, device=device)
@@ -251,6 +274,7 @@ def test(data,
 
     # Save JSON
     if save_json and len(jdict):
+        print('save json')
         f = 'detections_val2017_%s_results.json' % \
             (weights.split(os.sep)[-1].replace('.pt', '') if isinstance(weights, str) else '')  # filename
         print('\nCOCO mAP with pycocotools... saving %s...' % f)
@@ -263,7 +287,7 @@ def test(data,
             from fast_eval_api import COCOeval_opt as COCOeval
 
             imgIds = list(img_id_dict.values())
-            cocoGt = COCO('/mmdetection/data/crack_latest/annotations/crack_test.json')  # initialize COCO ground truth api
+            cocoGt = COCO('/mmdetection/data/total-missing/annotations/missing_valid.json')  # initialize COCO ground truth api
             cocoDt = cocoGt.loadRes(f)  # initialize COCO pred api
             cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
             cocoEval.params.imgIds = imgIds  # image IDs to evaluate
