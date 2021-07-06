@@ -15,6 +15,8 @@ for m in mode:
     path = Path(data_name+'_'+m)
     print(path)
     path.mkdir(parents=True, exist_ok=True)
+    path=Path('main_'+data_name+'_'+m)
+    path.mkdir(parents=True, exist_ok=True)
 
     with open(data_path+'annotations/'+data_name+'_'+m+'.json') as f:
         data=json.load(f)
@@ -42,11 +44,11 @@ for m in mode:
                 for p in range(int(len(p1)/2)):
                     p2.append([p1[2*p],p1[2*p+1]])
                 fill_pts = np.array([p2], np.int32)
-                cv2.fillPoly(mask, fill_pts, 255)
+                cv2.fillPoly(mask, fill_pts, 1)
                 mask_new=mask.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
                 img_new=img.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
                 print(bbox)
                 print(data_name+'_'+m+'/'+str(i)+'.png')
                 print(mask_new.shape)
                 cv2.imwrite(data_name+'_'+m+'/'+str(i)+'.png',mask_new)
-                cv2.imwrite('main_'+data_name+'_'+m+'/'+str(i)+'.png',img_new)
+                cv2.imwrite('main_'+data_name+'_'+m+'/'+str(i)+'.png',cv2.resize(img_new,(256,256)))
