@@ -295,17 +295,18 @@ def detection_target_layer(proposals, gt_boxes, gt_masks, config):
     #gt_class_ids = gt_class_ids.squeeze(0)
     #gt_boxes = gt_boxes.squeeze(0)
     #gt_masks = gt_masks.squeeze(0)
-    gt_boxes=gt_boxes.to('cpu')
+    gt_boxes=gt_boxes.to('cpu')*1536
     proposals=proposals.to('cpu')
     gt_class_ids=torch.ones((len(gt_boxes)))
     print('<>'*100)
     print('proposals')
-    print(proposals.shape)
+    print(proposals)
     print('gt_masks')
     print(gt_masks.size())
     #print(gt_masks)
+    #gt_boxes[...,0]=gt_boxes[...,0]
     print('gt_boxes')
-    print(gt_boxes.shape)
+    print(gt_boxes)
     #print(gt_boxes)
     #print('gt_class')
     #print(gt_class_ids.shape)
@@ -792,7 +793,8 @@ def train(hyp, opt, device, tb_writer=None):
             #sys.exit()
             ni = i + nb * epoch  # number integrated batches (since train start)
             imgs = imgs.to(device, non_blocking=True).float() / 255.0  # uint8 to float32, 0-255 to 0.0-1.0
-
+            print('imgs shape')
+            print(imgs.shape)
             # Warmup
             if ni <= nw:
                 xi = [0, nw]  # x interp

@@ -147,13 +147,17 @@ class Detect(nn.Module):
                 #print('y'*100)
                 #print(y)
                 #print(y)
-                boxes_found=y.view(bs, -1, self.no)
-                z_new.append(boxes_found)
+                #boxes_found=y.view(bs, -1, self.no)
+                #z_new.append(boxes_found)
                 y2=y.clone()
-                #y2[..., 0:2] = (y2[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
-                #y2[..., 2:4] = (y2[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                y2[..., 0:2] = (y2[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
+                y2[..., 2:4] = (y2[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+                boxes_found=y2.view(bs, -1, self.no)
+                
+                z_new.append(boxes_found)
                 z.append(y2.view(bs, -1, self.no))
-            #print(boxes_found.shape)
+            print('boxes found shape')
+            print(boxes_found.shape)
             #print(bs)
             boxes_found=boxes_found.view(bs*boxes_found.shape[1],6)
             #print(boxes_found.shape)
@@ -162,6 +166,8 @@ class Detect(nn.Module):
             boxes_found=boxes_found[torch.where(boxes_found[...,4]>0.4)]
             boxes_found=boxes_found[...,0:4]
             
+            print('boxes_found')
+            print(boxes_found)
             indexlist=[]
             for bb in range(bs):
                 #print('bs')
@@ -180,12 +186,18 @@ class Detect(nn.Module):
             #print(indexlist.dtype)
             fpn_val=torch.tensor(fpn_val,dtype=torch.float32)
             boxes_found=torch.tensor(boxes_found,dtype=torch.float32)
-            boxes_found[...,0]=boxes_found[...,0]-boxes_found[...,2]/2
-            boxes_found[...,1]=boxes_found[...,1]-boxes_found[...,3]/2
+            #boxes_found[...,0]=boxes_found[...,0]-boxes_found[...,2]/2
+            #boxes_found[...,1]=boxes_found[...,1]-boxes_found[...,3]/2
             boxes_found[...,2]=boxes_found[...,2]+boxes_found[...,0]
-            boxes_found[...,3]=boxes_found[...,2]+boxes_found[...,1]
+            boxes_found[...,3]=boxes_found[...,3]+boxes_found[...,1]
+            boxes_found_latest=boxes_found.clone()
+            boxes_found_latest=boxes_found_latest/self.stride[i]
             #pooled_features = CropAndResizeFunction(7, 7, 0)(fpn_val, boxes_found, indexlist)
             roi_align = RoIAlign(7,7, transform_fpcoor=True)
+            print('fpn shape')
+            print(fpn_val.shape)
+            print('boxes latest')
+            print(boxes_found_latest)
 
             # make crops:
             #print('ROI CHECK '*50)
@@ -193,7 +205,7 @@ class Detect(nn.Module):
             #print(boxes_found)
             #print(indexlist)
             #print('ROI CHECK END '*50)
-            crops = roi_align(fpn_val, boxes_found, indexlist)
+            crops = roi_align(fpn_val, boxes_found_latest, indexlist)
             #print('crops shape')
             #print(crops.shape)
             crops=crops.to('cpu')
