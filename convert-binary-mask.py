@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 import numpy as np
 
-data_path='/mmdetection/data/total-missing/'
-data_name='missing'
+data_path='/mmdetection/data/crack_latest/'
+data_name='crack'
 mode=['train','test','valid']
 img_dir=data_path+'/images/'
 #path = Path("parentdirectory/mydirectory")
@@ -44,11 +44,22 @@ for m in mode:
                 for p in range(int(len(p1)/2)):
                     p2.append([p1[2*p],p1[2*p+1]])
                 fill_pts = np.array([p2], np.int32)
-                cv2.fillPoly(mask, fill_pts, 1)
+                cv2.fillPoly(mask, fill_pts, 255)
                 mask_new=mask.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
                 img_new=img.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
-                print(bbox)
-                print(data_name+'_'+m+'/'+str(i)+'.png')
-                print(mask_new.shape)
+                #print(bbox)
+                #print(data_name+'_'+m+'/'+str(i)+'.png')
+                #print(mask_new.shape)
+                if mask_new.shape[0]==0 or mask_new.shape[1]==0:
+                    continue
+                mask_new=cv2.resize(mask_new,(256,256))
+                ret, thresh1 = cv2.threshold(mask_new, 127, 255, cv2.THRESH_BINARY)
+                thresh1=thresh1/255
+                print(np.unique(thresh1))
                 cv2.imwrite(data_name+'_'+m+'/'+str(i)+'.png',mask_new)
-                cv2.imwrite('main_'+data_name+'_'+m+'/'+str(i)+'.png',cv2.resize(img_new,(256,256)))
+                #img_new=cv2.resize(img_new,(256,256))
+                #ret, thresh1 = cv2.threshold(mask_new, 127, 255, cv2.THRESH_BINARY)
+                #thresh1=thresh1/255
+                #print(np.unique(thresh1))
+                img_new=cv2.resize(img_new,(256,256))
+                cv2.imwrite('main_'+data_name+'_'+m+'/'+str(i)+'.png',img_new)
