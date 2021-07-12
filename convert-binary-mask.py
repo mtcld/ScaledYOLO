@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 import numpy as np
 
-data_path='/mmdetection/data/crack_latest/'
-data_name='crack'
+data_path='/mmdetection/data/scratch/'
+data_name='scratch'
 mode=['train','test','valid']
 img_dir=data_path+'/images/'
 #path = Path("parentdirectory/mydirectory")
