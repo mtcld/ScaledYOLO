@@ -70,6 +70,97 @@ def create_dataloader(path, imgsz, batch_size, stride, opt, hyp=None, augment=Fa
                                              collate_fn=LoadImagesAndLabels.collate_fn)
     return dataloader, dataset
 
+class LoadImagesBatch:  # for inference
+    def __init__(self, paths, img_size=640):
+        if type(paths) == str:
+            p = str(Path(paths))  # os-agnostic
+            p = os.path.abspath(p)  # absolute path
+            if '*' in p:
+                files = sorted(glob.glob(p))  # glob
+            elif os.path.isdir(p):
+                files = sorted(glob.glob(os.path.join(p, '*.*')))  # dir
+            elif os.path.isfile(p):
+                files = [p]  # files
+            else:
+                raise Exception('ERROR: %s does not exist' % p)
+        
+        if type(paths) == list :
+            files = paths
+
+        images = [x for x in files if os.path.splitext(x)[-1].lower() in img_formats]
+        videos = [x for x in files if os.path.splitext(x)[-1].lower() in vid_formats]
+        #print('input :',images)
+        ni, nv = len(images), len(videos)
+
+        self.img_size = img_size
+        self.files = images + videos
+        self.nf = ni + nv  # number of files
+        self.video_flag = [False] * ni + [True] * nv
+        self.mode = 'images'
+        if any(videos):
+            self.new_video(videos[0])  # new video
+        else:
+            self.cap = None
+        assert self.nf > 0, 'No images or videos found in %s. Supported formats are:\nimages: %s\nvideos: %s' % \
+                            (p, img_formats, vid_formats)
+
+    def __iter__(self):
+        self.count = 0
+        return self
+
+    def __next__(self):
+        if self.count == self.nf:
+            raise StopIteration
+        path = self.files[self.count]
+
+        if self.video_flag[self.count]:
+            # Read video
+            self.mode = 'video'
+            ret_val, img0 = self.cap.read()
+            if not ret_val:
+                self.count += 1
+                self.cap.release()
+                if self.count == self.nf:  # last video
+                    raise StopIteration
+                else:
+                    path = self.files[self.count]
+                    self.new_video(path)
+                    ret_val, img0 = self.cap.read()
+
+            self.frame += 1
+            print('video %g/%g (%g/%g) %s: ' % (self.count + 1, self.nf, self.frame, self.nframes, path), end='')
+
+        else:
+            # Read image
+            self.count += 1
+            img0 = cv2.imread(path)  # BGR
+            #img0 = load_image2(self,path)[0]
+            assert img0 is not None, 'Image Not Found ' + path
+            #print('image %g/%g %s: ' % (self.count, self.nf, path), end='')
+
+        # Padded resize
+        h0,w0 = img0.shape[:2]
+        img,ratio,pad = letterbox(img0, new_shape=self.img_size,auto=False)
+        h,w = img.shape[:2]
+        shape = (h0, w0), (((h-2*pad[1]) / h0, (w-2*pad[0]) / w0), pad)
+        #print('after leter shape :',img.shape)
+
+        # Convert
+        img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+        img = np.ascontiguousarray(img)
+
+        # cv2.imwrite(path + '.letterbox.jpg', 255 * img.transpose((1, 2, 0))[:, :, ::-1])  # save letterbox image
+        #return path, img, img0, self.cap
+        return path, img, img0, shape
+
+    def new_video(self, path):
+        self.frame = 0
+        self.cap = cv2.VideoCapture(path)
+        self.nframes = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    def __len__(self):
+        return self.nf  # number of files
+
 
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640):
