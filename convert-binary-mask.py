@@ -24,6 +24,7 @@ for m in mode:
         image_id=  data['images'][i]['id']
         fn=data['images'][i]['file_name']
         img=cv2.imread(img_dir+'/'+fn)
+        #print(img.shape)
         #img_out_path=output_dir+'/'+m+'/'+fn
         #print(img_out_path)
         #cv2.imwrite(img_out_path,img)
@@ -50,13 +51,15 @@ for m in mode:
                 #print(bbox)
                 #print(data_name+'_'+m+'/'+str(i)+'.png')
                 #print(mask_new.shape)
-                if mask_new.shape[0]==0 or mask_new.shape[1]==0:
+                if mask_new.shape[0]*mask_new.shape[1]<35*35 or  mask_new.shape[0]==0 or mask_new.shape[1]==0:
                     continue
+                print('mask new shape')
+                print(mask_new.shape)
                 mask_new=cv2.resize(mask_new,(256,256))
                 ret, thresh1 = cv2.threshold(mask_new, 127, 255, cv2.THRESH_BINARY)
-                thresh1=thresh1/255
+                #thresh1=thresh1/255
                 print(np.unique(thresh1))
-                cv2.imwrite(data_name+'_'+m+'/'+str(i)+'.png',mask_new)
+                cv2.imwrite(data_name+'_'+m+'/'+str(i)+'.png',thresh1)
                 #img_new=cv2.resize(img_new,(256,256))
                 #ret, thresh1 = cv2.threshold(mask_new, 127, 255, cv2.THRESH_BINARY)
                 #thresh1=thresh1/255
