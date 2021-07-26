@@ -159,7 +159,7 @@ class Dev_model():
                     cropped_box=temp_img.copy()[rec[1]:rec[3],rec[0]:rec[2]]
                     cropped_box_size=cropped_box.shape
                     cropped_box=cv2.resize(cropped_box,(96,96))
-                    cropped_box=cropped_box.transpose()
+                    #cropped_box=cropped_box.transpose()
                     cropped_box=cropped_box.reshape(3,96,96)
                     cropped_box=torch.from_numpy(cropped_box)
                     cropped_box=torch.unsqueeze(cropped_box, 0)

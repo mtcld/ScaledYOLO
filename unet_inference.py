@@ -113,7 +113,7 @@ class ResNetUNet(nn.Module):
     
 
 def unet_pred(input_batch):
-    base_model = models.resnet18(pretrained=False)
+    base_model = models.resnet18(pretrained=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = ResNetUNet(1)
