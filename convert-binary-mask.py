@@ -4,9 +4,10 @@ import json
 from pathlib import Path
 import numpy as np
 
-data_path='/mmdetection/data/scratch/'
-data_name='scratch'
-mode=['train','test','valid']
+data_name='dent'
+data_path='/mmdetection/data/'+data_name+'/'
+
+mode=['train_aug','test','valid']
 img_dir=data_path+'/images/'
 #path = Path("parentdirectory/mydirectory")
 #path.mkdir(parents=True, exist_ok=True)
