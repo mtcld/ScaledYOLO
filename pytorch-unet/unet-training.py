@@ -78,8 +78,9 @@ trans = transforms.Compose([
     #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # imagenet
 ])
 
-train_set = SimDataset(subset="train", transform=trans)
-val_set = SimDataset( subset="valid",transform=trans)
+damage_name='dent'
+train_set = SimDataset(subset="train", transform=trans,damage_name=damage_name)
+val_set = SimDataset( subset="valid",transform=trans,damage_name=damage_name)
 
 image_datasets = {
     'train': train_set, 'val': val_set
@@ -311,7 +312,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     # load best model weights
     model.load_state_dict(best_model_wts)
     state_dict = model.state_dict()
-    torch.save(state_dict, 'best6.pt')
+    torch.save(state_dict, 'dent_best.pt')
     return model
 
 import torch
@@ -337,7 +338,7 @@ optimizer_ft = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()),
 
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=10, gamma=0.1)        
         
-model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=40)
+model = train_model(model, optimizer_ft, exp_lr_scheduler, num_epochs=20)
 
 #### prediction
 
@@ -345,7 +346,7 @@ import math
 
 model.eval()   # Set model to evaluate mode
 
-test_dataset = SimDataset(subset="test", transform = trans)
+test_dataset = SimDataset(subset="test", transform = trans,damage_name=damage_name)
 test_loader = DataLoader(test_dataset, batch_size=3, shuffle=True, num_workers=0)
         
 inputs, labels = next(iter(test_loader))

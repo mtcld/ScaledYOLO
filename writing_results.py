@@ -196,13 +196,14 @@ class Dev_model():
                 print('output/'+paths[i][path[i].rfind('/')+1:])
                 print(main_img[:,:,0:3].shape,temp_img.shape)
                 im_h = cv2.hconcat([temp_img, main_img[:,:,0:3]])
-                cv2.imwrite('output/'+paths[i][paths[i].rfind('/')+1:],im_h)
+                cv2.imwrite('outputdent/'+paths[i][paths[i].rfind('/')+1:],im_h)
                         
         return output
 
 if __name__ == '__main__':
-    damage_name='scratch'
-    weight_path = "/mmdetection/data/'+damage_name+'_model/best.pt"
+    damage_name='dent'
+    weight_path = '/mmdetection/data/'+damage_name+'_model/best.pt'
+    print(weight_path)
     #weight_path = "./pytorch-unet/best.pt"
     #img_path1 = ['test_dev/car.jpeg']
     #img_path1 = ['test_dev/car.jpeg','test_dev/a7.jpg']
