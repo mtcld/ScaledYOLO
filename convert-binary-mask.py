@@ -7,7 +7,7 @@ import numpy as np
 data_name='dent'
 data_path='/mmdetection/data/'+data_name+'/'
 
-mode=['train_aug','test','valid']
+mode=['train','test','valid']
 img_dir=data_path+'/images/'
 #path = Path("parentdirectory/mydirectory")
 #path.mkdir(parents=True, exist_ok=True)
