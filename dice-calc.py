@@ -117,7 +117,7 @@ def unet_pred(input_batch):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = ResNetUNet(1)
     model = model.to(device)
-    model.load_state_dict(torch.load('pytorch-unet/dent_best.pt'))
+    model.load_state_dict(torch.load('pytorch-unet/best4.pt'))
 
 
     model.eval()   # Set model to evaluate mode
