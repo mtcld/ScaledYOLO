@@ -142,7 +142,7 @@ def unet_pred(input_batch):
 
 
 #read input images
-damage_name='dent'
+damage_name='scratch'
 imgs_path=glob.glob('main_'+damage_name+'_test/*.png')
 #imgs_path=glob.glob('test_dev/*.png')
 print(len(imgs_path))
