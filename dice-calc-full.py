@@ -1,5 +1,6 @@
 import sys
 import torch
+from tqdm import tqdm
 import json
 import glob
 import cv2
@@ -139,6 +140,10 @@ class Dev_model():
         output = OrderedDict()
         for i, det in enumerate(pred):  # detections per image
             main_img=cv2.imread(paths[i])
+            h,w=main_img.shape[:2]
+            print('wh')
+            print(h,w)
+            mask_img=np.zeros((h,w),np.uint8)
             temp_img=main_img.copy()
             print(paths[i])
             if det is not None and len(det):
@@ -157,12 +162,19 @@ class Dev_model():
                     rec = torch.tensor(xyxy).view(1,4).view(-1).int().tolist()
                     conf = (conf).view(-1).detach().tolist()[0]
                     cls = (cls).view(-1).detach().tolist()[0]
-
+                    rec[2]=min(w,rec[2])
+                    rec[3]=min(h,rec[3])
+                    
+                    print('re')
+                    print(rec)
+                    
                     boxes.append(rec)
                     labels.append(cls)
                     scores.append(conf)
                     cropped_box=temp_img.copy()[rec[1]:rec[3],rec[0]:rec[2]]
                     cropped_box_size=cropped_box.shape
+                    print('c shape')
+                    print(cropped_box_size)
                     cropped_box=cv2.resize(cropped_box,(96,96))
                     z1=z1+1
                     cv2.imwrite('cropped/'+str(z1)+'.png',cropped_box)
@@ -182,10 +194,25 @@ class Dev_model():
                     
                     _, segm_thresh = cv2.threshold(segm_pred, 127, 255, cv2.THRESH_BINARY)
                     print(np.unique(segm_thresh))
-                    cv2.imwrite('temp/'+str(n1)+'.png',segm_thresh)
-                    main_img=overlay_mask(main_img,segm_thresh,rec[0],rec[1],str(n1))
                     
-                    cv2.rectangle(main_img, (rec[0], rec[1]), (rec[2], rec[3]), (255,0,0), 2)
+                    
+
+                    #if rec[3]-rec[1]==0  or rec[2]-rec[0]==0:
+                    #    continue
+                    segm_thresh = cv2.cvtColor(segm_thresh, cv2.COLOR_BGR2GRAY)
+                    print('sts')
+                    print(segm_thresh.shape)
+                    print('mask')
+                    print(mask_img.shape)
+                    cv2.imwrite('temp/'+str(n1)+'.png',segm_thresh)
+                    print(mask_img[rec[1]:rec[3],rec[0]:rec[2]].shape)
+                    #main_img=overlay_mask(main_img,segm_thresh,rec[0],rec[1],str(n1))
+                    m_shape=mask_img[rec[1]:rec[3],rec[0]:rec[2]].shape
+                    if m_shape[0]*m_shape[1]==0:
+                       continue
+                    mask_img[rec[1]:rec[3],rec[0]:rec[2]]=segm_thresh
+                    
+                    #cv2.rectangle(main_img, (rec[0], rec[1]), (rec[2], rec[3]), (255,0,0), 2)
                     
                 out_boxes['boxes'] = boxes
                 out_boxes['labels'] = labels
@@ -194,11 +221,11 @@ class Dev_model():
                 print('outboxes')
                 print(out_boxes)
                 print('output/'+paths[i][path[i].rfind('/')+1:])
-                print(main_img[:,:,0:3].shape,temp_img.shape)
-                im_h = cv2.hconcat([temp_img, main_img[:,:,0:3]])
-                cv2.imwrite('outputcrack/'+paths[i][paths[i].rfind('/')+1:],im_h)
+                #print(main_img[:,:,0:3].shape,temp_img.shape)
+                #im_h = cv2.hconcat([temp_img, mask_img])
+                cv2.imwrite('maskcrack/'+paths[i][paths[i].rfind('/')+1:],mask_img)
                         
-        return output
+        return mask_img
 
 if __name__ == '__main__':
     damage_name='crack'
@@ -209,17 +236,46 @@ if __name__ == '__main__':
     #img_path1 = ['test_dev/car.jpeg','test_dev/a7.jpg']
     img_path1=[]
     json_path='/mmdetection/data/'+damage_name+'/annotations/'+damage_name+'_test.json'
-    d1=json.load(open(json_path))
-    for i in d1['images']:
-        img_path1.append('/mmdetection/data/'+damage_name+'/images/'+i['file_name'])
-    img_path1=img_path1[:100]
+    data=json.load(open(json_path))
     model = Dev_model(weight_path,0.3,0.3)
-    out1 = model.inference(img_path1)
-    print(out1)
-    print('*'*10)
-
-    #out2 = model.inference(img_path2)
-    #print(out2)
-    #print('*'*10)
-
-  
+    dice=[]
+    l=0
+    for i in tqdm(range(len(data['images']))):
+        try:
+            h=data['images'][i]['height']
+            w=data['images'][i]['width']
+            print(h,w)
+            mask=np.zeros((h,w),dtype='uint8')
+            for j in range(len(data['annotations'])):
+                if data['annotations'][j]['image_id']==data['images'][i]['id']:
+                    p1=data['annotations'][j]['segmentation'][0]
+                    p1=[int(i) for i in p1]
+                    p2=[]
+                    for p in range(int(len(p1)/2)):
+                        p2.append([p1[2*p],p1[2*p+1]])
+                    fill_pts = np.array([p2], np.int32)
+                    cv2.fillPoly(mask, fill_pts, 1)
+            #print(np.unique(mask))
+            #print(np.unique(mask,return_counts=True)[1][1]/(w*h))
+            if np.unique(mask,return_counts=True)[1][1]/(w*h)>0.000:
+                img_path1=('/mmdetection/data/'+damage_name+'/images/'+data['images'][i]['file_name'])
+                img=cv2.imread(img_path1)
+                
+                pred = model.inference(img_path1)
+                pred=pred/255
+                #out = predictor(img)
+                #pred = torch.sum(out['instances'].pred_masks,dim=0) > 0
+                #pred = pred.cpu().detach().numpy()
+                pred=pred.astype(int)
+                intersection = np.logical_and(mask, pred)
+                if len(np.unique(pred,return_counts=True)[1])>1:
+                    ground=np.unique(mask,return_counts=True)[1][1]
+                    pred_val=np.unique(pred,return_counts=True)[1][1]
+                    dice_score = 2*np.sum(intersection) / (ground+pred_val)
+                else:
+                    dice_score=0
+                dice.append(dice_score)
+        except Exception as e:
+            print(e)
+    final_dice=sum(dice)/len(dice)
+    print('Dice Coeff: '+str(final_dice))

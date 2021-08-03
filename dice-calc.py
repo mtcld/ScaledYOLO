@@ -118,7 +118,7 @@ def unet_pred(input_batch):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = ResNetUNet(1)
     model = model.to(device)
-    model.load_state_dict(torch.load('pytorch-unet/dent_best.pt'))
+    model.load_state_dict(torch.load('pytorch-unet/crack_best.pt'))
 
 
     model.eval()   # Set model to evaluate mode
@@ -143,7 +143,7 @@ def unet_pred(input_batch):
 
 
 #read input images
-damage_name='dent'
+damage_name='crack'
 imgs_path=glob.glob('main_'+damage_name+'_test/*.png')
 #imgs_path=glob.glob('test_dev/*.png')
 print(len(imgs_path))

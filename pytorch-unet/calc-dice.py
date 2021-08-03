@@ -258,10 +258,10 @@ import math
 
 model = ResNetUNet(1)
 model = model.to(device)
-model.load_state_dict(torch.load('dent_best.pt'))
+model.load_state_dict(torch.load('crack_best.pt'))
 
 model.eval()   # Set model to evaluate mode
-damage_name='dent'
+damage_name='crack'
 test_dataset = SimDataset(subset="test", transform = trans,damage_name=damage_name)
 test_loader = DataLoader(test_dataset, batch_size=3, shuffle=True, num_workers=0)
 

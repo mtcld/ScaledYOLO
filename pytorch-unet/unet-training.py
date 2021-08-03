@@ -78,7 +78,7 @@ trans = transforms.Compose([
     #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # imagenet
 ])
 
-damage_name='dent'
+damage_name='crack'
 train_set = SimDataset(subset="train", transform=trans,damage_name=damage_name)
 val_set = SimDataset( subset="valid",transform=trans,damage_name=damage_name)
 
@@ -312,7 +312,7 @@ def train_model(model, optimizer, scheduler, num_epochs=25):
     # load best model weights
     model.load_state_dict(best_model_wts)
     state_dict = model.state_dict()
-    torch.save(state_dict, 'dent_best.pt')
+    torch.save(state_dict, 'crack_best.pt')
     return model
 
 import torch

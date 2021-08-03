@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import numpy as np
 
-data_name='dent'
+data_name='crack'
 data_path='/mmdetection/data/'+data_name+'/'
 
 mode=['train','test','valid']
