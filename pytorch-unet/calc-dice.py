@@ -276,7 +276,7 @@ for inputs, labels in test_loader:
     
     target_masks_rgb = [helper.masks_to_colorimg(x) for x in labels.cpu().numpy()]
     pred_rgb = [helper.masks_to_colorimg(x) for x in pred]
-    
+    print(len(target_masks_rgb))
     for k in range(len(target_masks_rgb)):
         try:
             target_masks_rgb_mask=cv2.cvtColor(target_masks_rgb[k],cv2.COLOR_BGR2GRAY)
