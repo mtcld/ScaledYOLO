@@ -6,6 +6,7 @@ import numpy as np
 
 data_name='dent'
 data_path='/mmdetection/data/'+data_name+'/'
+padding=0.05
 
 mode=['train','test','valid']
 img_dir=data_path+'/images/'
@@ -13,6 +14,7 @@ img_dir=data_path+'/images/'
 #path.mkdir(parents=True, exist_ok=True)
 
 for m in mode:
+    n1=0
     path = Path(data_name+'_'+m)
     print(path)
     path.mkdir(parents=True, exist_ok=True)
@@ -34,9 +36,11 @@ for m in mode:
         #fn_text=fn[:fn.rfind('.')]+'.txt'
         height=data['images'][i]['height']
         width=data['images'][i]['width']
+        bbox_list=[]
+        mask=np.zeros((height,width),dtype='uint8')
         for j in range(len(data['annotations'])):
             if data['annotations'][j]['image_id']==image_id:
-                mask=np.zeros((height,width),dtype='uint8')
+                
                 bbox=data['annotations'][j]['bbox']
                 bbox=[int(i) for i in bbox]
                 p1=data['annotations'][j]['segmentation'][0]
@@ -47,23 +51,32 @@ for m in mode:
                     p2.append([p1[2*p],p1[2*p+1]])
                 fill_pts = np.array([p2], np.int32)
                 cv2.fillPoly(mask, fill_pts, 255)
-                mask_new=mask.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
-                img_new=img.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
+                bbox_list.append(bbox)
+        for bbox in bbox_list:
+            n1=n1+1
+            width_crop=bbox[2]-bbox[0]
+            height_crop=bbox[3]-bbox[1]
+            x1_new=max(0,bbox[0]-padding*width_crop)
+            x2_new=min(width-1,bbox[2]+padding*width_crop)
+            y1_new=max(0,bbox[1]-padding*height_crop)
+            y2_new=min(height-1,bbox[3]+padding*height_crop)
+            mask_new=mask.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
+            img_new=img.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
                 #print(bbox)
                 #print(data_name+'_'+m+'/'+str(i)+'.png')
                 #print(mask_new.shape)
-                if mask_new.shape[0]*mask_new.shape[1]<35*35 or  mask_new.shape[0]==0 or mask_new.shape[1]==0:
-                    continue
-                print('mask new shape')
-                print(mask_new.shape)
-                mask_new=cv2.resize(mask_new,(256,256))
-                ret, thresh1 = cv2.threshold(mask_new, 127, 255, cv2.THRESH_BINARY)
+            if mask_new.shape[0]*mask_new.shape[1]<35*35 or  mask_new.shape[0]==0 or mask_new.shape[1]==0:
+                continue
+            print('mask new shape')
+            print(mask_new.shape)
+            mask_new=cv2.resize(mask_new,(256,256))
+            ret, thresh1 = cv2.threshold(mask_new, 127, 255, cv2.THRESH_BINARY)
                 #thresh1=thresh1/255
-                print(np.unique(thresh1))
-                cv2.imwrite(data_name+'_'+m+'/'+str(i)+'.png',thresh1)
+            print(np.unique(thresh1))
+            cv2.imwrite(data_name+'_'+m+'/'+str(n1)+'.png',thresh1)
                 #img_new=cv2.resize(img_new,(256,256))
                 #ret, thresh1 = cv2.threshold(mask_new, 127, 255, cv2.THRESH_BINARY)
                 #thresh1=thresh1/255
                 #print(np.unique(thresh1))
-                img_new=cv2.resize(img_new,(256,256))
-                cv2.imwrite('main_'+data_name+'_'+m+'/'+str(i)+'.png',img_new)
+            img_new=cv2.resize(img_new,(256,256))
+            cv2.imwrite('main_'+data_name+'_'+m+'/'+str(n1)+'.png',img_new)
