@@ -54,14 +54,15 @@ for m in mode:
                 bbox_list.append(bbox)
         for bbox in bbox_list:
             n1=n1+1
-            width_crop=bbox[2]-bbox[0]
-            height_crop=bbox[3]-bbox[1]
-            x1_new=max(0,bbox[0]-padding*width_crop)
-            x2_new=min(width-1,bbox[2]+padding*width_crop)
-            y1_new=max(0,bbox[1]-padding*height_crop)
-            y2_new=min(height-1,bbox[3]+padding*height_crop)
-            mask_new=mask.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
-            img_new=img.copy()[bbox[1]:bbox[3]+bbox[1],bbox[0]:bbox[2]+bbox[0]]
+            width_crop=bbox[2]
+            height_crop=bbox[3]
+            x1_new=int(max(0,bbox[0]-padding*width_crop))
+            x2_new=int(min(width-1,bbox[0]+width_crop+padding*width_crop))
+            y1_new=int(max(0,bbox[1]-padding*height_crop))
+            y2_new=int(min(height-1,bbox[1]+height_crop+padding*height_crop))
+            print(y1_new,y2_new)
+            mask_new=mask.copy()[y1_new:y2_new,x1_new:x2_new]
+            img_new=img.copy()[y1_new:y2_new,x1_new:x2_new]
                 #print(bbox)
                 #print(data_name+'_'+m+'/'+str(i)+'.png')
                 #print(mask_new.shape)
