@@ -170,9 +170,9 @@ for i in imgs_path:
     _, pred = cv2.threshold(segm_pred, 127, 255, cv2.THRESH_BINARY)
     #pred=pred/255
     #cv2.imwrite(str(n)+'.png',pred)
-    mask=mask.copy()[int(0.025*mask.shape[0]):int(0.975*mask.shape[0]),int(0.025*mask.shape[1]):int(0.975*(mask.shape[1]))]
+    #mask=mask.copy()[int(0.1*mask.shape[0]):int(0.90*mask.shape[0]),int(0.1*mask.shape[1]):int(0.9*(mask.shape[1]))]
     cv2.imwrite('maskextra/'+str(n)+'.png',mask)
-    pred=pred.copy()[int(0.025*pred.shape[0]):int(0.975*pred.shape[0]),int(0.025*pred.shape[1]):int(0.975*(pred.shape[1]))]
+    pred=pred.copy()[int(0.1*pred.shape[0]):int(0.9*pred.shape[0]),int(0.1*pred.shape[1]):int(0.9*(pred.shape[1]))]
     print(mask.shape,pred.shape)
     print(np.unique(mask),np.unique(pred))
     try:
