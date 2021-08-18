@@ -6,7 +6,7 @@ import numpy as np
 
 data_name='dent'
 data_path='/mmdetection/data/'+data_name+'/'
-padding=0.1
+padding=0.0
 
 mode=['train','test','valid']
 img_dir=data_path+'/images/'
