@@ -4,7 +4,9 @@ import json
 import os
 import shutil
 from pathlib import Path
-
+from PIL import Image
+Image.MAX_IMAGE_PIXELS = None
+#PIL.Image.MAX_IMAGE_PIXELS = 933120000
 import numpy as np
 import torch
 import yaml
@@ -136,13 +138,21 @@ def test(data,
 
             # Append to pycocotools JSON dictionary
             if save_json:
-                with open('/mmdetection/data/dent_latest2/annotations/dent_test.json') as f:
+                with open('/mmdetection/data/dent/annotations/dent_train.json') as f:
                     d1=json.load(f)
                 img_id_dict={}
                 for zz1 in range(len(d1['images'])):
                     fn=d1['images'][zz1]['file_name']
                     fn=fn[:fn.rfind('.')]
                     img_id_dict[fn]=d1['images'][zz1]['id']
+                with open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json') as f:
+                    d1=json.load(f)
+                #img_id_dict={}
+                for zz1 in range(len(d1['images'])):
+                    fn=d1['images'][zz1]['file_name']
+                    fn=fn[:fn.rfind('.')]
+                    img_id_dict[fn]=d1['images'][zz1]['id']
+
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = Path(paths[si]).stem
                 image_id=img_id_dict[image_id]
@@ -223,7 +233,7 @@ def test(data,
 
     # Save JSON
     if save_json and len(jdict):
-        f = 'detections_val2017_%s_results.json' % \
+        f = 'detections_train2017_%s_results.json' % \
             (weights.split(os.sep)[-1].replace('.pt', '') if isinstance(weights, str) else '')  # filename
         print('\nCOCO mAP with pycocotools... saving %s...' % f)
         with open(f, 'w') as file:

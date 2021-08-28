@@ -3,15 +3,25 @@ import cv2
 from tqdm import tqdm
 from pathlib import Path
 damage_name='dent'
-mode=['train','test','valid']
-annt_dir='/mmdetection/data/dent_latest2/annotations'
-img_dir='/mmdetection/data/dent_latest2/images'
-output_dir='data2'
+mode=['train','test','valid','merimen']
+annt_dir='/mmdetection/data/'+damage_name+'/annotations'
+img_dir='/mmdetection/data/'+damage_name+'/images'
+output_dir='data_dent_merimen'
+
+merimen_images='/mmdetection/data/dentmerimen/dent/images'
+with open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json') as f:
+    datamerimen = json.load(f)
 
 for m in mode:
-    Path("data2/"+m).mkdir(parents=True, exist_ok=True)
-    with open(annt_dir+'/'+damage_name+'_'+m+'.json') as f:
-        data=json.load(f)
+
+    if m =='merimen':
+        data=datamerimen
+        m='train'
+    else:
+        Path("data_dent_merimen/"+m).mkdir(parents=True, exist_ok=True)
+        with open(annt_dir+'/'+damage_name+'_'+m+'.json') as f:
+            data=json.load(f)
+
     for i in tqdm(range(len(data['images']))):
         image_id=  data['images'][i]['id']
         fn=data['images'][i]['file_name']
@@ -36,4 +46,3 @@ for m in mode:
 
                 with open(output_dir+'/'+m+'/'+fn_text, 'a') as the_file:
                     the_file.write('0 '+x_c+' '+y_c+' '+x_w+' '+y_h+'\n')
-

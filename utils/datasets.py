@@ -434,10 +434,10 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Get labels
         #with open('cache.json', 'w') as outfile:
         #    json.dump(cache,outfile,indent=4,ensure_ascii = False)
-        #print('#'*100)
-        #print(cache[self.img_files[0]])
-        #print(self.img_files[857])
-        #print(cache[self.img_files[857]])
+        print('#'*100)
+        print(cache[self.img_files[0]])
+        print(self.img_files[18007])
+        print(cache[self.img_files[18007]])
         #print(cache[self.img_files[858]])
         #print(len(cache[self.img_files]))
 

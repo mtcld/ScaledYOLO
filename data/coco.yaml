@@ -1,10 +1,10 @@
 # train and val datasets (image directory or *.txt file with image paths)
-train: data2/train.txt  # 118k images
-val: data2/valid.txt  # 5k images
-test: data2/test.txt  # 20k images for submission to https://competitions.codalab.org/competitions/20794
+train: data_dent_merimen/train.txt  # 118k images
+val: data_dent_merimen/train.txt  # 5k images
+test: data_dent_merimen/train.txt  # 20k images for submission to https://competitions.codalab.org/competitions/20794
 
 # number of classes
 nc: 1
 
 # class names
-names: ['crack']
+names: ['dent']
