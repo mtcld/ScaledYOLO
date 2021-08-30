@@ -138,15 +138,15 @@ def test(data,
 
             # Append to pycocotools JSON dictionary
             if save_json:
-                with open('/mmdetection/data/dent/annotations/dent_train.json') as f:
+                with open('/mmdetection/data/dent/annotations/dent_train_merged.json') as f:
                     d1=json.load(f)
                 img_id_dict={}
                 for zz1 in range(len(d1['images'])):
                     fn=d1['images'][zz1]['file_name']
                     fn=fn[:fn.rfind('.')]
                     img_id_dict[fn]=d1['images'][zz1]['id']
-                with open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json') as f:
-                    d1=json.load(f)
+                #with open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json') as f:
+                #    d1=json.load(f)
                 #img_id_dict={}
                 for zz1 in range(len(d1['images'])):
                     fn=d1['images'][zz1]['file_name']

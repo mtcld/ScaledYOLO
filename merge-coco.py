@@ -1,8 +1,8 @@
 import json
 import sys
 
-dt=json.load(open('/home/gaurav/dent_train.json'))
-pp=json.load(open('/home/gaurav/post_pseudo.json'))
+dt=json.load(open('/mmdetection/data/dent/annotations/dent_train.json'))
+pp=json.load(open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json'))
 
 print(type(dt['images']))
 #sys.exit()

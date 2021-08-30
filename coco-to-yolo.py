@@ -3,20 +3,22 @@ import cv2
 from tqdm import tqdm
 from pathlib import Path
 damage_name='dent'
-mode=['train','test','valid','merimen']
+mode=['train','test','valid']
 annt_dir='/mmdetection/data/'+damage_name+'/annotations'
 img_dir='/mmdetection/data/'+damage_name+'/images'
 output_dir='data_dent_merimen'
 
-merimen_images='/mmdetection/data/dentmerimen/dent/images'
-with open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json') as f:
-    datamerimen = json.load(f)
+#merimen_images='/mmdetection/data/dentmerimen/dent/images'
+#with open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json') as f:
+#    datamerimen = json.load(f)
 
 for m in mode:
 
-    if m =='merimen':
-        data=datamerimen
-        m='train'
+    if m =='train':
+        Path("data_dent_merimen/"+m).mkdir(parents=True, exist_ok=True)
+        with open(annt_dir+'/'+damage_name+'_'+m+'_merged.json') as f:
+            data=json.load(f)
+
     else:
         Path("data_dent_merimen/"+m).mkdir(parents=True, exist_ok=True)
         with open(annt_dir+'/'+damage_name+'_'+m+'.json') as f:
@@ -38,10 +40,13 @@ for m in mode:
             if data['annotations'][j]['image_id']==image_id:
                 bbox=data['annotations'][j]['bbox']
 
-                x_c= str((bbox[0]+0.5*bbox[2])/width)
-                y_c = str((bbox[1] + 0.5 * bbox[3]) / height)
-                x_w = str(bbox[2] / width)
-                y_h = str(bbox[3] / height)
+                x_c= str(min((bbox[0]+0.5*bbox[2])/width,1.0))
+                if float(x_c)>1:
+                    print(float(x_c))
+                    print(fn)
+                y_c = str(min((bbox[1] + 0.5 * bbox[3]) / height,1.0))
+                x_w = str(min(bbox[2] / width,1.0))
+                y_h = str(min(bbox[3] / height,1.0))
 
 
                 with open(output_dir+'/'+m+'/'+fn_text, 'a') as the_file:

@@ -65,9 +65,9 @@ file_store=damage_name + '_files/'
 fp_store=damage_name + '_fp/'
 
 
-test_json='/mmdetection/data/dent_latest2/annotations/dent_test.json'
-pred_json='detections_val2017__results.json'
-img_dir='/mmdetection/data/dent_latest2/images/'
+test_json='/mmdetection/data/dent/annotations/dent_test.json'
+pred_json='detections_test2017__results.json'
+img_dir='/mmdetection/data/dent/images/'
 
 with open(test_json) as f:
     data=json.load(f)
@@ -178,6 +178,8 @@ for i in range(len(data['images'])):
                 
                 
                 else:
+                    if max(area_dict.values())==0:
+                        print(r_pred)
                     FP=FP+1
                     fp_temp=fp_temp+1
                     status='FP'
