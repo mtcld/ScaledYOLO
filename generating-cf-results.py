@@ -30,7 +30,7 @@ def rect_area_single(a):  # returns None if rectangles don't intersect
     dx = a.xmax- a.xmin
     dy = a.ymax- a.ymin
     return dx*dy
-
+#5~5~5~5~5~5~5~5~5~
 def size_check(path,image,r_org,damage_name):
     
     area_org=rect_area_single(r_org)
@@ -57,7 +57,8 @@ def size_check_ann(r_org):
 
 
 damage_name='dent'
-
+mode='valid'
+data_file='data_dent_merimen2'
 
 Rectangle = namedtuple('Rectangle', 'xmin ymin xmax ymax')
 
@@ -65,9 +66,9 @@ file_store=damage_name + '_files/'
 fp_store=damage_name + '_fp/'
 
 
-test_json='/mmdetection/data/dent/annotations/dent_test.json'
-pred_json='detections_test2017__results.json'
-img_dir='/mmdetection/data/dent/images/'
+test_json='/mmdetection/data/dent2/annotations/dent_valid.json'
+pred_json='detections_valid2017__results.json'
+img_dir='/mmdetection/data/dent2/images/'
 
 with open(test_json) as f:
     data=json.load(f)
@@ -105,6 +106,9 @@ for i in range(len(data['images'])):
 
     file_name=data['images'][i]['file_name']
     file_id=data['images'][i]['id']
+    fn_text=file_name[:file_name.rfind('.')]
+    fn_text=data_file+'/'+mode+'/'+fn_text+'.txt'
+    #print(fn_text)
     print(img_dir+file_name)
     img=cv2.imread(img_dir+file_name)
     print(img.shape)
@@ -161,7 +165,7 @@ for i in range(len(data['images'])):
                         
                     r_org=org_bbox_dict[ann_detected]
                         
-                    size=size_check_ann(r_org)
+                    #size=size_check_ann(r_org)
                         
                     cv2.rectangle(image_new_org,(r_pred.xmin,r_pred.ymin),(r_pred.xmax,r_pred.ymax),(255,0,0),2)
                         
@@ -180,6 +184,13 @@ for i in range(len(data['images'])):
                 else:
                     if max(area_dict.values())==0:
                         print(r_pred)
+                    x_c=str((r_pred.xmin+r_pred.xmax)/(2*w))
+                    y_c=str((r_pred.ymin+r_pred.ymax)/(2*h))
+                    x_w=str((r_pred.xmax-r_pred.xmin)/w)
+                    y_h=str((r_pred.ymax-r_pred.ymin)/h)
+                    print(fn_text)
+                    with open(fn_text, 'a') as the_file:
+                        the_file.write('1 '+x_c+' '+y_c+' '+x_w+' '+y_h+'\n')
                     FP=FP+1
                     fp_temp=fp_temp+1
                     status='FP'
@@ -192,7 +203,7 @@ for i in range(len(data['images'])):
                     cv2.rectangle(image_new_org,(r_pred.xmin,r_pred.ymin),(r_pred.xmax,r_pred.ymax),(0,0,255),2)
                                                 
                     cv2.imwrite(file_store+file_name,image_new_org)
-                    size=-1
+                    #size=-1
             
     for ann in org_bbox_dict.keys():
         if ann in bbox_detected:
@@ -200,7 +211,7 @@ for i in range(len(data['images'])):
         FN=FN+1
         fn_temp=fn_temp+1
         r_org=org_bbox_dict[ann]
-        size=size_check_ann(r_org)
+        #size=size_check_ann(r_org)
             
     if fp_check==1:
         cv2.imwrite(fp_store+file_name,image_new_org)
