@@ -1,7 +1,7 @@
 # train and val datasets (image directory or *.txt file with image paths)
 train: data_dent_merimen2/train.txt  # 118k images
-val: data_dent_merimen2/train.txt  # 5k images
-test: data_dent_merimen2/train.txt  # 20k images for submission to https://competitions.codalab.org/competitions/20794
+val: data_dent_merimen2/test.txt  # 5k images
+test: data_dent_merimen2/test.txt  # 20k images for submission to https://competitions.codalab.org/competitions/20794
 
 # number of classes
 nc: 2

@@ -57,7 +57,7 @@ def size_check_ann(r_org):
 
 
 damage_name='dent'
-mode='valid'
+mode='test'
 data_file='data_dent_merimen2'
 
 Rectangle = namedtuple('Rectangle', 'xmin ymin xmax ymax')
@@ -66,9 +66,9 @@ file_store=damage_name + '_files/'
 fp_store=damage_name + '_fp/'
 
 
-test_json='/mmdetection/data/dent2/annotations/dent_valid.json'
-pred_json='detections_valid2017__results.json'
-img_dir='/mmdetection/data/dent2/images/'
+test_json='/mmdetection/data/dent/annotations/dent_test.json'
+pred_json='detections_train_reflect_2017__results.json'
+img_dir='/mmdetection/data/dent/images/'
 
 with open(test_json) as f:
     data=json.load(f)

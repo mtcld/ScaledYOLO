@@ -138,7 +138,7 @@ def test(data,
 
             # Append to pycocotools JSON dictionary
             if save_json:
-                with open('/mmdetection/data/dent/annotations/dent_train_merged.json') as f:
+                with open('/mmdetection/data/dent/annotations/dent_test.json') as f:
                     d1=json.load(f)
                 img_id_dict={}
                 for zz1 in range(len(d1['images'])):
@@ -233,7 +233,7 @@ def test(data,
 
     # Save JSON
     if save_json and len(jdict):
-        f = 'detections_train2017_%s_results.json' % \
+        f = 'detections_train_reflect_2017_%s_results.json' % \
             (weights.split(os.sep)[-1].replace('.pt', '') if isinstance(weights, str) else '')  # filename
         print('\nCOCO mAP with pycocotools... saving %s...' % f)
         with open(f, 'w') as file:
