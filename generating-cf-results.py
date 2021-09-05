@@ -93,8 +93,9 @@ FP=0
 FN=0
 
 
-    
-for i in range(len(data['images'])):
+ff_temp={}
+ff_temp['file']=[]
+for i in range(int(1*len(data['images']))):
     fp_check=0
     tp_temp=0
     fp_temp=0
@@ -134,6 +135,17 @@ for i in range(len(data['images'])):
     
     for yp in pred_data:
         if yp['image_id']==file_id and yp['score']>0.25:
+            if yp['category_id']==0.0:
+                color1=(255,0,0)
+            else:
+                ff_temp['file'].append(file_name)
+                print(file_name)
+                print('stop')
+                with open('ff_temp.json', 'w') as outfile:
+                    json.dump(ff_temp,outfile,indent=4,ensure_ascii = False)
+
+                #sys.exit()
+                color1=(255,0,255)
             bbox_pred=yp['bbox']
             area_list=[]
             bbox_detected=[]
@@ -167,7 +179,7 @@ for i in range(len(data['images'])):
                         
                     #size=size_check_ann(r_org)
                         
-                    cv2.rectangle(image_new_org,(r_pred.xmin,r_pred.ymin),(r_pred.xmax,r_pred.ymax),(255,0,0),2)
+                    cv2.rectangle(image_new_org,(r_pred.xmin,r_pred.ymin),(r_pred.xmax,r_pred.ymax),color1,2)
                         
                     p_pred.append(bbox_pred)
                         
@@ -220,3 +232,7 @@ for i in range(len(data['images'])):
 confusion_matrix={'true_positve_25':TP25,'true_positve_50':TP50,'false_positive':FP, 'false_negative':FN}
 with open(damage_name+'_confusion_matrix.json', 'w') as outfile:
         json.dump(confusion_matrix,outfile,indent=4,ensure_ascii = False)
+with open('ff_temp.json', 'w') as outfile:
+        json.dump(ff_temp,outfile,indent=4,ensure_ascii = False)
+
+
