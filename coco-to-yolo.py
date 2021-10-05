@@ -4,13 +4,14 @@ from tqdm import tqdm
 from pathlib import Path
 damage_name='dent'
 mode=['train','test','valid']
-annt_dir='/mmdetection/data/dent_latest2/annotations'
-img_dir='/mmdetection/data/dent_latest2/images'
-output_dir='data2'
+#mode=['total']
+annt_dir='/workspace/share/thang/datasets/dent/annotations'
+img_dir='/workspace/share/thang/datasets/dent/images'
+output_dir='dent_dehaze'
 
 for m in mode:
-    Path("data2/"+m).mkdir(parents=True, exist_ok=True)
-    with open(annt_dir+'/'+damage_name+'_'+m+'.json') as f:
+    Path("dent_dehaze/"+m).mkdir(parents=True, exist_ok=True)
+    with open(annt_dir+'/'+m+'.json') as f:
         data=json.load(f)
     for i in tqdm(range(len(data['images']))):
         image_id=  data['images'][i]['id']
@@ -28,12 +29,18 @@ for m in mode:
             if data['annotations'][j]['image_id']==image_id:
                 bbox=data['annotations'][j]['bbox']
 
-                x_c= str((bbox[0]+0.5*bbox[2])/width)
-                y_c = str((bbox[1] + 0.5 * bbox[3]) / height)
-                x_w = str(bbox[2] / width)
-                y_h = str(bbox[3] / height)
+                #x_c= str((bbox[0]+0.5*bbox[2])/width)
+                #y_c = str((bbox[1] + 0.5 * bbox[3]) / height)
+                #x_w = str(bbox[2] / width)
+                #y_h = str(bbox[3] / height)
+                x_c= str(min((bbox[0]+0.5*bbox[2])/width,1.0))
+                y_c = str(min((bbox[1] + 0.5 * bbox[3]) / height,1.0))
+                x_w = str(min(bbox[2] / width,1.0))
+                y_h = str(min(bbox[3] / height,1.0))
+                if float(x_c)>1 or float(x_w)>1 or float(y_c)>1 or float(y_h)>1:
+                    print(fn)
 
-
+               
                 with open(output_dir+'/'+m+'/'+fn_text, 'a') as the_file:
                     the_file.write('0 '+x_c+' '+y_c+' '+x_w+' '+y_h+'\n')
 

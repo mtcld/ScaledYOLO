@@ -4,7 +4,12 @@ import os
 import random
 import time
 from pathlib import Path
-
+#import  PIL
+try:
+    import Image
+except ImportError:
+    from PIL import Image
+Image.MAX_IMAGE_PIXELS = 933120000
 import numpy as np
 import torch.distributed as dist
 import torch.nn.functional as F
