@@ -138,7 +138,7 @@ def test(data,
 
             # Append to pycocotools JSON dictionary
             if save_json:
-                with open('/mmdetection/data/dent/annotations/dent_test.json') as f:
+                with open('/workspace/share/thang/datasets/dent/annotations/test.json') as f:
                     d1=json.load(f)
                 img_id_dict={}
                 for zz1 in range(len(d1['images'])):
@@ -148,13 +148,18 @@ def test(data,
                 #with open('/mmdetection/data/dentmerimen/dent/annotations/post_pseudo.json') as f:
                 #    d1=json.load(f)
                 #img_id_dict={}
-                for zz1 in range(len(d1['images'])):
-                    fn=d1['images'][zz1]['file_name']
-                    fn=fn[:fn.rfind('.')]
-                    img_id_dict[fn]=d1['images'][zz1]['id']
+                #for zz1 in range(len(d1['images'])):
+                #    fn=d1['images'][zz1]['file_name']
+                #    fn=fn[:fn.rfind('.')]
+                #    img_id_dict[fn]=d1['images'][zz1]['id']
 
                 # [{"image_id": 42, "category_id": 18, "bbox": [258.15, 41.29, 348.26, 243.78], "score": 0.236}, ...
                 image_id = Path(paths[si]).stem
+                #print(img_id_dict.keys())
+                if image_id not in img_id_dict.keys():
+                    print('fail')
+                    continue
+                print('pass')
                 image_id=img_id_dict[image_id]
                 
                 box = pred[:, :4].clone()  # xyxy

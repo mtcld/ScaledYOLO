@@ -66,9 +66,10 @@ file_store=damage_name + '_files/'
 fp_store=damage_name + '_fp/'
 
 
-test_json='/mmdetection/data/dent/annotations/dent_test.json'
+#test_json='/mmdetection/data/dent/annotations/dent_test.json'
+test_json='/workspace/share/thang/datasets/dent/annotations/test.json'
 pred_json='detections_train_reflect_2017__results.json'
-img_dir='/mmdetection/data/dent/images/'
+img_dir='/workspace/share/thang/datasets/dent/images/'
 
 with open(test_json) as f:
     data=json.load(f)
