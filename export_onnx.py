@@ -8,12 +8,54 @@ from models.experimental import attempt_load
 from utils.activations import Mish
 from onnxsim import simplify
 
+import tensorrt as trt
+
+def save_trt_engine(engine, path):
+    """Serialize TensorRT engine to disk.
+    Arguments:
+        engine (tensorrt.ICudaEngine): TensorRT engine to serialize
+        path (str): disk path to write the engine
+    """
+    with open(path, mode='wb') as f:
+        f.write(bytearray(engine.serialize()))
+
+# build tensorRT engine from onnx_file_path and save at engine_file_path
+def build_engine(onnx_file_path,engine_file_path):
+    # initialize TensorRT engine and parse ONNX model
+    builder = trt.Builder(TRT_LOGGER)
+    EXPLICIT_BATCH = 1 << (int)(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
+    network = builder.create_network(EXPLICIT_BATCH)
+    parser = trt.OnnxParser(network, TRT_LOGGER)
+
+    # allow TensorRT to use up to 1GB of GPU memory for tactic selection
+    builder.max_workspace_size = 1 << 30
+    # we have only one image in batch
+    builder.max_batch_size = 1
+    # use FP16 mode if possible
+    if builder.platform_has_fast_fp16:
+        builder.fp16_mode = True
+        print('use FP16 mode inference !!')
+
+    # parse ONNX
+    with open(onnx_file_path, 'rb') as model:
+        print('Beginning ONNX file parsing')
+        parser.parse(model.read())
+    print('Completed parsing of ONNX file')
+
+    # generate TensorRT engine optimized for the target platform
+    print('Building an engine...')
+    engine = builder.build_cuda_engine(network)
+    print("Completed creating Engine")
+    print('Saving engine ...')
+    save_trt_engine(engine,engine_file_path)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='./weights/yolov4-p5.pt', help='weights path')  # from yolov5/models/
-    parser.add_argument('--img-size', nargs='+', type=int, default=[896, 896], help='image size')  # height, width
+    parser.add_argument('--img-size', nargs='+', type=int, default=[1024, 1024], help='image size')  # height, width
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
+    parser.add_argument('--engine_file',type=str, default=None, help='output engine file path')
+    parser.add_argument('--model_data_file',type=str, default=None, help='output model data (grid,stride,...) file path')
     opt = parser.parse_args()
     opt.img_size *= 2 if len(opt.img_size) == 1 else 1  # expand
     print(opt)
@@ -25,6 +67,7 @@ if __name__ == '__main__':
     model = attempt_load(opt.weights, map_location=torch.device('cpu'))  # load FP32 model
 
     # Update model
+    
     for k, m in model.named_modules():
         m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatability
         if isinstance(m, models.common.Conv) and isinstance(m.act, models.common.Mish):
@@ -39,10 +82,23 @@ if __name__ == '__main__':
                 m.bn = bn
             if isinstance(m.act, models.common.Mish):
                 m.act = Mish()  # assign activation
+    
         # if isinstance(m, models.yolo.Detect):
         #     m.forward = m.forward_export  # assign forward (optional)
 
     model.eval()
+
+    # Save spec of model
+    detector = model.model[-1]
+    db = {
+        'num_detector_layer': detector.nl,
+        'grid': detector.grid,
+        'anchor_grid': detector.anchor_grid,
+        'stride' : detector.stride
+    }
+    print('Saving spec of model into ',opt.model_data_file,'....')
+    torch.save(bd,opt.model_data_file)
+
     model.model[-1].export = True  # set Detect() layer export=True
     # y = model(img)  # dry run
 
@@ -62,8 +118,13 @@ if __name__ == '__main__':
         onnx.save(model_simp, f)
         # print(onnx.helper.printable_graph(onnx_model.graph))  # print a human readable model
         print('ONNX export success, saved as %s' % f)
+
     except Exception as e:
         print('ONNX export failure: %s' % e)
 
-    # Finish
-    print('\nExport complete. Visualize with https://github.com/lutzroeder/netron.')
+    # tensorRT build engine and save in .trt file
+    try :
+        build_engine(f,opt.engine_file)
+    except Exception as e:
+        print('TensorRT export failure: %s' % e)
+
