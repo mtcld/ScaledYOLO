@@ -8,5 +8,5 @@
     - model spec store file (file store tride, number of detection layer, grid, anchor grid in tensor format)
 - Example :
 ```
-python export_onnx.py --weights scratch.pt --engine_file scratch.trt --model_data_file scrath_db
+python export_onnx.py --weights scratch.pt --engine_file scratch.trt --model_data_file scratch_db
 ```
