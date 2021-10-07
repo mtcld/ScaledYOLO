@@ -33,6 +33,8 @@ class TensorRT_model():
         self.conf_score = confident_score
         self.iou_thres = iou_threshold
         self.label = label
+        self.device = torch.device('cuda:0')
+
 
     def load_trt_engine(self,path):
         """Deserialize TensorRT engine from disk.
@@ -124,17 +126,18 @@ class TensorRT_model():
         for i in range(self.num_detector_layer):
             feature_size = math.sqrt(len(trt_outputs[i])/self.batch_size/4/self.no)
             feature_size = int(feature_size)
-            y = torch.Tensor(trt_outputs[i]).reshape(self.batch_size,4,feature_size,feature_size,self.no)
+            y = torch.Tensor(trt_outputs[i]).reshape(self.batch_size,4,feature_size,feature_size,self.no).to(self.device)
 
             if self.grid[i].shape[2:4] != y.shape[2:4]:
                 self.grid[i] = self._make_grid(feature_size,feature_size)
             
             y = y.sigmoid()
-            y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i]) * self.stride[i]  # xy
-            y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
+            y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(self.device)) * self.stride[i].to(self.device)  # xy
+            y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i].to(self.device)  # wh
             raw_output.append(y.view(self.batch_size, -1, self.no))
-        
+        print(y.device)
         raw_output = torch.cat(raw_output,1)
+        print(raw_output)
 
         raw_output = non_max_suppression(raw_output, self.conf_score, self.iou_thres, agnostic=True)
 
@@ -167,11 +170,13 @@ class TensorRT_model():
 def main():
     
     paths = ['scratch_yolo/valid/https:__s3.amazonaws.com_mc-imt_vehicle_2020D3862_detail_damage2_51519_medium_A902874A-D6F3-45F2-994F-98A756E21547.jpeg']
+    #'scratch_yolo/valid/https:__s3.amazonaws.com_mc-ai_dataset_india_20190312_1_IMG_20170417_101024.jpg'
     engine_file_path = 'scratch.trt'
     model_data_file_path = 'scratch_db'
     model = TensorRT_model(engine_file_path,model_data_file_path,0.3,0.3,'scratch')
     out = model.inference(paths)
 
+    print(out)
     img = cv2.imread(paths[0])
     for box in out[paths[0]]['boxes']:
         print(box)
