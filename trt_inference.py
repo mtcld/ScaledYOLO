@@ -33,7 +33,7 @@ class TensorRT_model():
         self.conf_score = confident_score
         self.iou_thres = iou_threshold
         self.label = label
-        self.device = torch.device('cuda:0')
+        self.device = torch.device('cpu')
 
 
     def load_trt_engine(self,path):
@@ -169,20 +169,29 @@ class TensorRT_model():
 
 def main():
     
-    paths = ['scratch_yolo/valid/https:__s3.amazonaws.com_mc-imt_vehicle_2020D3862_detail_damage2_51519_medium_A902874A-D6F3-45F2-994F-98A756E21547.jpeg']
-    #'scratch_yolo/valid/https:__s3.amazonaws.com_mc-ai_dataset_india_20190312_1_IMG_20170417_101024.jpg'
+    paths = ['scratch_yolo/valid/https:__s3.amazonaws.com_mc-imt_vehicle_2020D3862_detail_damage2_51519_medium_A902874A-D6F3-45F2-994F-98A756E21547.jpeg','scratch_yolo/valid/https:__s3.amazonaws.com_mc-ai_dataset_india_20190312_1_IMG_20170417_101024.jpg']
     engine_file_path = 'scratch.trt'
     model_data_file_path = 'scratch_db'
     model = TensorRT_model(engine_file_path,model_data_file_path,0.3,0.3,'scratch')
-    out = model.inference(paths)
+    out = model.inference(paths[0])
 
     print(out)
     img = cv2.imread(paths[0])
-    for box in out[paths[0]]['boxes']:
+    for box in out['/workspace/share/'+paths[0]]['boxes']:
         print(box)
         img = cv2.rectangle(img,(box[0],box[1]),(box[2],box[3]),(255, 0, 0),1)
 
     cv2.imwrite('test.png',img)
+
+    out = model.inference(paths[1])
+
+    print(out)
+    img = cv2.imread(paths[1])
+    for box in out['/workspace/share/'+paths[1]]['boxes']:
+        print(box)
+        img = cv2.rectangle(img,(box[0],box[1]),(box[2],box[3]),(255, 0, 0),1)
+
+    cv2.imwrite('test1.png',img)
 
 if __name__ == '__main__':
     main()
