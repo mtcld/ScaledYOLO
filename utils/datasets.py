@@ -440,8 +440,12 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         #print(cache[self.img_files[857]])
         #print(cache[self.img_files[858]])
         #print(len(cache[self.img_files]))
-
-        #print(self.img_files)
+        print('*'*40)
+        for ss in self.img_files:
+            print(ss)
+            print(*cache[ss])
+        #print(self.img_files[0])
+        #print(cache[self.img_files[0]])
         labels, shapes = zip(*[cache[x] for x in self.img_files])
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)

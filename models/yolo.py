@@ -45,8 +45,19 @@ class Detect(nn.Module):
                 y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 + self.grid[i].to(x[i].device)) * self.stride[i]  # xy
                 y[..., 2:4] = (y[..., 2:4] * 2) ** 2 * self.anchor_grid[i]  # wh
                 z.append(y.view(bs, -1, self.no))
-
+            #print('Training Check')
+            #print(self.export)
+            #print(self.training)
         return x if self.training else (torch.cat(z, 1), x)
+        #if self.training:
+        #    return x
+        #else:
+        #    if self.export:
+        #        valinf=torch.cat(z,1)
+        #        valinf=non_max_suppression(valinf, conf_thres=0.1,iou_thres= 0.6, classes=opt.classes, merge=False)
+        #        return nms(valinf)
+        #    else:
+        #        return (torch.cat(z, 1), x)
 
     @staticmethod
     def _make_grid(nx=20, ny=20):
@@ -138,8 +149,11 @@ class Model(nn.Module):
         m = self.model[-1]  # Detect() module
         for mi, s in zip(m.m, m.stride):  # from
             b = mi.bias.view(m.na, -1)  # conv.bias(255) to (3,85)
-            b[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
-            b[:, 5:] += math.log(0.6 / (m.nc - 0.99)) if cf is None else torch.log(cf / cf.sum())  # cls
+            with torch.no_grad():
+                b[:, 4] += math.log(8 / (640 / s) ** 2) # obj (8 objects per 640 image)
+                b[:, 5:] += math.log(0.6 / (m.nc - 0.99)) if cf is None else torch.log(cf / cf.sum()) # cls
+            #b[:, 4] += math.log(8 / (640 / s) ** 2)  # obj (8 objects per 640 image)
+            #b[:, 5:] += math.log(0.6 / (m.nc - 0.99)) if cf is None else torch.log(cf / cf.sum())  # cls
             mi.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
 
     def _print_biases(self):

@@ -16,7 +16,7 @@ from torch.cuda import amp
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
-
+import sys
 import test  # import test.py to get mAP after each epoch
 from models.yolo import Model
 from utils.datasets import create_dataloader
@@ -146,6 +146,10 @@ def train(hyp, opt, device, tb_writer=None):
         model = DDP(model, device_ids=[opt.local_rank], output_device=(opt.local_rank))
 
     # Trainloader
+    #print('opt '*50)
+    #print(opt.classes)
+    #print(opt)
+    #sys.exit()
     dataloader, dataset = create_dataloader(train_path, imgsz, batch_size, gs, opt, hyp=hyp, augment=True,
                                             cache=opt.cache_images, rect=opt.rect, local_rank=rank,
                                             world_size=opt.world_size)
@@ -429,7 +433,7 @@ if __name__ == '__main__':
         assert opt.batch_size % opt.world_size == 0, '--batch-size must be multiple of CUDA device count'
         opt.batch_size = opt.total_batch_size // opt.world_size
 
-    print(opt)
+    #print(opt)
     with open(opt.hyp) as f:
         hyp = yaml.load(f, Loader=yaml.FullLoader)  # load hyps
 
