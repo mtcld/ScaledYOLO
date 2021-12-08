@@ -343,14 +343,13 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Get labels
         #with open('cache.json', 'w') as outfile:
         #    json.dump(cache,outfile,indent=4,ensure_ascii = False)
-        #print('#'*100)
-        #print(cache[self.img_files[0]])
+        print('#'*100)
+        print(cache[self.img_files[0]])
         #print(self.img_files[857])
         #print(cache[self.img_files[857]])
         #print(cache[self.img_files[858]])
         #print(len(cache[self.img_files]))
-
-        #print(self.img_files)
+        print(self.img_files[0])
         labels, shapes = zip(*[cache[x] for x in self.img_files])
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)
