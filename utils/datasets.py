@@ -1,3 +1,4 @@
+from email.mime import image
 import glob
 import math
 import os
@@ -241,6 +242,61 @@ class LoadImagesBatch:  # for inference
 
     def __len__(self):
         return self.nf  # number of files
+
+class LoadImageSAHI:  # for inference
+    def __init__(self, image, img_size=640):
+        self.image = image
+
+        
+        #print('input :',images)
+        ni, nv = 1, 0
+
+        self.img_size = img_size
+        #self.files = [] + videos
+        self.nf = ni + nv  # number of files
+        self.video_flag = [False] * ni + [True] * nv
+        self.mode = 'images'
+
+        assert self.nf > 0, 'No images or videos found in %s. Supported formats are:\nimages: %s\nvideos: %s' % \
+                            (p, img_formats, vid_formats)
+
+    def __iter__(self):
+        self.count = 0
+        return self
+
+    def __next__(self):
+        if self.count == self.nf:
+            raise StopIteration
+        #path = self.files[self.count]
+        # Read image
+        self.count += 1
+        img0 = self.image  # BGR
+        #img0 = load_image2(self,path)[0]
+        assert img0 is not None, 'Image Not Found '
+        #print('image %g/%g %s: ' % (self.count, self.nf, path), end='')
+
+        # Padded resize
+        h0,w0 = img0.shape[:2]
+        img,ratio,pad = letterbox(img0, new_shape=self.img_size,auto=False)
+        h,w = img.shape[:2]
+        shape = (h0, w0), (((h-2*pad[1]) / h0, (w-2*pad[0]) / w0), pad)
+        #print('after leter shape :',img.shape)
+
+        # Convert
+        img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+        img = np.ascontiguousarray(img)
+
+        # cv2.imwrite(path + '.letterbox.jpg', 255 * img.transpose((1, 2, 0))[:, :, ::-1])  # save letterbox image
+        #return path, img, img0, self.cap
+        return img, img0, shape
+
+    def new_video(self, path):
+        self.frame = 0
+        self.cap = cv2.VideoCapture(path)
+        self.nframes = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    def __len__(self):
+        return self.nf 
 
 class LoadWebcam:  # for inference
     def __init__(self, pipe=0, img_size=640):
