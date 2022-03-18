@@ -15,4 +15,4 @@ python -m pip install -e .
 git checkout integrate-SAHI
 ```
 
-## Demo and detail of how to use sahi with scale-yolo-v4 in [demo_yolo_v4.py](demo_yolo_v4.py) , general guide of sahi [here](https://colab.research.google.com/github/obss/sahi/blob/main/demo/inference_for_mmdetection.ipynb)
+## Demo and detail of how to use sahi with scale-yolo-v4 in [demo_yolo_v4.py](../demo_yolo_v4.py) , general guide of sahi [here](https://colab.research.google.com/github/obss/sahi/blob/main/demo/inference_for_mmdetection.ipynb)
