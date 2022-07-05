@@ -4,7 +4,7 @@
 ```
 git clone https://github.com/thangnx183/ScaledYOLO.git
 cd ScaledYOLO
-git checkout update-docker
+git checkout develop
 ```
 
 ## setup docker 
