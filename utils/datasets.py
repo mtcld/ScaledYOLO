@@ -152,7 +152,7 @@ class LoadImages:  # for inference
         return self.nf  # number of files
 
 class LoadImagesBatch:  # for inference
-    def __init__(self, paths, img_size=640):
+    def __init__(self, paths, img_size=640,flip=False):
         if type(paths) == str:
             p = str(Path(paths))  # os-agnostic
             p = os.path.abspath(p)  # absolute path
@@ -174,6 +174,7 @@ class LoadImagesBatch:  # for inference
         ni, nv = len(images), len(videos)
 
         self.img_size = img_size
+        self.flip = flip
         self.files = images + videos
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
@@ -215,6 +216,9 @@ class LoadImagesBatch:  # for inference
             # Read image
             self.count += 1
             img0 = cv2.imread(path)  # BGR
+            
+            if self.flip:
+                img0 = np.flip(img0,1)  
             #img0 = load_image2(self,path)[0]
             assert img0 is not None, 'Image Not Found ' + path
             #print('image %g/%g %s: ' % (self.count, self.nf, path), end='')
