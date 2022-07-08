@@ -419,10 +419,16 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.stride = stride
 
         # Define labels
-        self.label_files = [x.replace('images', 'labels').replace(os.path.splitext(x)[-1], '.txt') for x in
+        #print('debug path arg : ',path)
+        label_path = path.replace('.txt','')
+        # self.label_files = [x.replace('images', 'labels').replace(os.path.splitext(x)[-1], '.txt') for x in
+                            # self.img_files]
+        
+        self.label_files = [label_path+'/'+os.path.basename(x).replace(os.path.splitext(x)[-1], '.txt') for x in
                             self.img_files]
 
         # Check cache
+        #print('labels files :',self.label_files[0],self.img_files[0])
         cache_path = str(Path(self.label_files[0]).parent) + '.cache'  # cached labels
         #print("cache path : ",cache_path)
         if os.path.isfile(cache_path):
@@ -457,6 +463,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         #print(self.img_files[379])
 
         labels, shapes = zip(*[cache[x] for x in self.img_files])
+        #print('debug : ',labels)
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)
 
@@ -490,6 +497,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         pbar = tqdm(self.label_files)
         for i, file in enumerate(pbar):
             l = self.labels[i]  # label
+            #print('debug : ',l)
             if l.shape[0]:
                 assert l.shape[1] == 5, '> 5 label columns: %s' % file
                 assert (l >= 0).all(), 'negative labels: %s' % file
